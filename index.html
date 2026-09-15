@@ -1192,6 +1192,10 @@
           else if (tieneIncidencia) nodeBg = 'bg-[#FF007F] text-white border-red-400 glow-pink';
           else nodeBg = 'bg-[#FF007F] text-white border-pink-300';
 
+          let badgeBg = 'bg-slate-800 text-slate-300 border-slate-700';
+          if (p.tipoAccion && p.tipoAccion.includes('(R)')) badgeBg = 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40';
+          if (p.tipoAccion && p.tipoAccion.includes('(E)')) badgeBg = 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
+
           let expedientesHtml = '';
           if (p.expedientes && p.expedientes.length > 0) {
             expedientesHtml = `
@@ -2565,18 +2569,16 @@
         const tipoExp = (exp.tipo || '').toUpperCase().trim(); 
 
         const isRecogida = tipoExp.includes('RECOGIDA') || tipoExp.includes('R');
-        // Si es RECOGIDA, la parada es la localidad de origen. Si es ENTREGA, la parada es la localidad de destino.
         const targetLoc = isRecogida ? (origLoc || destLoc) : (destLoc || origLoc);
         if (!targetLoc) return;
 
-        // Buscar parada existente que coincida
+        // Buscar parada existente que coincida exactamente o parcialmente
         let paradaMatch = result.paradas.find(p => {
           const pLoc = (p.localidad || '').toUpperCase().trim();
           return targetLoc.includes(pLoc) || pLoc.includes(targetLoc);
         });
 
         if (!paradaMatch) {
-          // Si no existe la parada exacta en el itinerario superior, la creamos dinámicamente
           paradaMatch = {
             id: `p_gen_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
             orden: result.paradas.length,
@@ -2599,7 +2601,6 @@
         paradaMatch.expedientes.push(exp);
       });
 
-      // Reordenar índices de paradas
       result.paradas.forEach((p, i) => { p.orden = i; });
 
       return result;
