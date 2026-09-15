@@ -2501,8 +2501,14 @@
     }
 
     async function processRouteImage(base64Image, mimeType) {
-      const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
-Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario (secuencia de paradas con localidad, kmTramo, tipoAccion). 3. Expedientes (expediente, tipo, moto, clienteOrigen, telOrigen, locOrigen, clienteDestino, telDestino, locDestino, importe) mapeados a cada parada.
+        const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
+
+REGLAS OBLIGATORIAS DE ASIGNACIÓN:
+1. PUNTOS BASE: Las paradas con tipoAccion "SALIDA BASE" o "RETORNO BASE" (nave / Torrejón de Velasco) son únicamente puntos de salida o llegada del camión. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su lista "expedientes" debe ser siempre un array vacío: []).
+2. ASIGNACIÓN POR LOCALIDAD: Cada albarán/expediente debe asignarse EXCLUSIVAMENTE a la parada intermedia donde se recoge o se entrega la moto según su trayecto real (ej: si el trayecto es Rajadell -> Pedrosillo el Ralo, el albarán pertenece a una de esas localidades, NUNCA a la salida de base).
+
+Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario (secuencia de paradas con localidad, kmTramo, tipoAccion). 3. Expedientes (expediente, tipo, moto, clienteOrigen, telOrigen, locOrigen, clienteDestino, telDestino, locDestino, importe).
+
 Devuelve EXCLUSIVAMENTE este JSON:
 {
   "nombreRuta": "string", "conductor": "string", "dni": "string", "matricula": "string", "totalKm": 0, "gastosGasoil": "string", "fecha": "string", "avisoEspecial": "string",
@@ -2515,6 +2521,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
     }
   ]
 }`;
+
       try {
         const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
         let response = null;
