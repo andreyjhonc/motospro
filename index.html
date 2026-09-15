@@ -980,7 +980,6 @@
       const apiInput = safeDOM('api-key-input');
       if (apiInput) apiInput.value = userApiKey;
 
-      // Vincular listeners de archivos de forma robusta
       const bindFileEvent = (id, cb) => {
         const el = safeDOM(id);
         if (el) el.onchange = cb;
@@ -1184,8 +1183,6 @@
         stopsList.innerHTML = active.paradas.map(p => {
           const esCompletada = p.estado === 'completada';
           const tieneIncidencia = p.estado === 'incidencia';
-          const esRecogida = p.tipoAccion && p.tipoAccion.includes('(R)');
-          const esEntrega = p.tipoAccion && p.tipoAccion.includes('(E)');
           const esBase = p.esOrigen || p.esFin || (p.tipoAccion && p.tipoAccion.includes('BASE'));
           const tiempoTramo = p.kmTramo > 0 ? calcularTiempoEstimado(p.kmTramo) : null;
 
@@ -1195,15 +1192,14 @@
           else if (tieneIncidencia) nodeBg = 'bg-[#FF007F] text-white border-red-400 glow-pink';
           else nodeBg = 'bg-[#FF007F] text-white border-pink-300';
 
-          let badgeBg = 'bg-slate-800 text-slate-300 border-slate-700';
-          if (esRecogida) badgeBg = 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40';
-          if (esEntrega) badgeBg = 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
-
           let expedientesHtml = '';
           if (p.expedientes && p.expedientes.length > 0) {
             expedientesHtml = `
               <div class="mt-3 space-y-3.5 pt-2.5 border-t border-[#1C263E]/70">
                 ${p.expedientes.map((exp, eIdx) => {
+                  const tipoUpper = (exp.tipo || '').toUpperCase();
+                  const esRecogida = tipoUpper.includes('RECOGIDA') || tipoUpper.includes('R');
+                  
                   const cliente = esRecogida ? exp.clienteOrigen : exp.clienteDestino;
                   const tel = esRecogida ? exp.telOrigen : exp.telDestino;
                   const rutaTexto = `${exp.locOrigen || '---'} ➔ ${exp.locDestino || '---'}`;
@@ -1224,15 +1220,18 @@
                     <div class="p-3.5 rounded-2xl border transition-all flex flex-col space-y-3 ${cardHighlight}">
                       <div class="flex items-start justify-between">
                         <div>
-                          <div class="flex items-center space-x-1.5">
+                          <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                             <span class="text-xs font-black text-[#00E676] font-mono">${exp.expediente || 'S/N'}</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded font-black uppercase ${esRecogida ? 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40' : 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40'}">
+                              ${esRecogida ? '🔴 RECOGIDA (R)' : '🟢 ENTREGA (E)'}
+                            </span>
                             <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#1C263E] text-slate-300 font-mono font-bold">
                               ${esEfectivo ? (exp.importeEfectivo || '0') + ' €' : (exp.importe || 'TRANS')}
                             </span>
                             ${estadoExp === 'hecha' ? `<span class="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40">✓ HECHA</span>` : ''}
                             ${estadoExp === 'anulada' ? `<span class="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-red-500/20 text-red-300 border border-red-500/40">✕ ANULADA</span>` : ''}
                           </div>
-                          <div class="text-xs font-bold text-white mt-0.5">🏍️ ${exp.moto || 'Motocicleta'}</div>
+                          <div class="text-xs font-bold text-white mt-1">🏍️ ${exp.moto || 'Motocicleta'}</div>
                           <div class="text-[11px] text-slate-300 mt-0.5">👤 <strong>${cliente || 'Sin nombre'}</strong> (${tel || 'Sin teléfono'})</div>
                           <div class="text-[10px] text-slate-400">📍 ${rutaTexto}</div>
                         </div>
@@ -1867,7 +1866,8 @@
       showToast(`Generando Ficha A4 para ${exp.expediente || 'Albarán'}...`);
 
       const sandbox = safeDOM('pdf-render-sandbox');
-      const esRecogida = parada.tipoAccion && parada.tipoAccion.includes('(R)');
+      const tipoUpper = (exp.tipo || '').toUpperCase();
+      const esRecogida = tipoUpper.includes('RECOGIDA') || tipoUpper.includes('R');
       const esEfectivo = exp.metodoPago === 'EFECTIVO';
       const cliente = esRecogida ? exp.clienteOrigen : exp.clienteDestino;
       const tel = esRecogida ? exp.telOrigen : exp.telDestino;
@@ -1963,8 +1963,8 @@
               <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 8px; padding: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1C263E; padding-bottom: 4px; margin-bottom: 6px;">
                   <span style="font-size: 8.5px; font-weight: 900; text-transform: uppercase; color: #00E676;">📦 INFORMACIÓN DE ENVÍO</span>
-                  <span style="font-size: 7.5px; font-weight: bold; padding: 1px 5px; border-radius: 4px; background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676;">
-                    ${parada.tipoAccion || 'ENTREGA (E)'}
+                  <span style="font-size: 7.5px; font-weight: bold; padding: 1px 5px; border-radius: 4px; ${esRecogida ? 'background: rgba(255,0,127,0.15); color: #FF007F; border: 1px solid #FF007F;' : 'background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676;'}">
+                    ${esRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)'}
                   </span>
                 </div>
                 <div style="margin-bottom: 6px;">
@@ -2535,7 +2535,7 @@
     function sanitizeExtractedRoute(result) {
       if (!result || !result.paradas) return result;
       
-      // 1. Forzar que las bases nunca tengan motos asignadas y sus nombres sean limpios
+      // 1. Limpiar bases (Torrejón de Velasco)
       result.paradas.forEach((p, idx) => {
         const loc = (p.localidad || '').toUpperCase().trim();
         const action = (p.tipoAccion || '').toUpperCase().trim();
@@ -2550,7 +2550,7 @@
         }
       });
 
-      // 2. Redistribuir expedientes a sus paradas reales según origen/destino
+      // 2. Extraer todos los expedientes para reubicarlos quirúrgicamente según su localidad real
       const allExpedientes = [];
       result.paradas.forEach(p => {
         if (p.expedientes) {
@@ -2562,31 +2562,45 @@
       allExpedientes.forEach(exp => {
         const origLoc = (exp.locOrigen || '').toUpperCase().trim();
         const destLoc = (exp.locDestino || '').toUpperCase().trim();
-        const tipoExp = (exp.tipo || '').toUpperCase().trim(); // RECOGIDA o ENTREGA
+        const tipoExp = (exp.tipo || '').toUpperCase().trim(); 
 
-        // Determinar en qué parada debe estar según sea Recogida (origen) o Entrega (destino)
-        let targetLoc = tipoExp.includes('RECOGIDA') ? origLoc : destLoc;
-        if (!targetLoc) targetLoc = destLoc || origLoc;
+        const isRecogida = tipoExp.includes('RECOGIDA') || tipoExp.includes('R');
+        // Si es RECOGIDA, la parada es la localidad de origen. Si es ENTREGA, la parada es la localidad de destino.
+        const targetLoc = isRecogida ? (origLoc || destLoc) : (destLoc || origLoc);
+        if (!targetLoc) return;
 
-        // Buscar parada existente que coincida con la localidad
+        // Buscar parada existente que coincida
         let paradaMatch = result.paradas.find(p => {
           const pLoc = (p.localidad || '').toUpperCase().trim();
           return targetLoc.includes(pLoc) || pLoc.includes(targetLoc);
         });
 
-        if (paradaMatch) {
-          paradaMatch.expedientes.push(exp);
-        } else {
-          // Si no existe la parada exacta en el itinerario superior, crearla o añadirla a la primera parada intermedia
-          let stopToUse = result.paradas.find(p => !((p.tipoAccion || '').toUpperCase().includes('BASE')));
-          if (!stopToUse && result.paradas.length > 1) stopToUse = result.paradas[1];
-          if (stopToUse) {
-            stopToUse.expedientes.push(exp);
-          } else if (result.paradas.length > 0) {
-            result.paradas[0].expedientes.push(exp);
+        if (!paradaMatch) {
+          // Si no existe la parada exacta en el itinerario superior, la creamos dinámicamente
+          paradaMatch = {
+            id: `p_gen_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
+            orden: result.paradas.length,
+            localidad: targetLoc,
+            tipoAccion: isRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)',
+            kmTramo: 0,
+            esOrigen: false,
+            esFin: false,
+            estado: 'pendiente',
+            expedientes: []
+          };
+          const retIndex = result.paradas.findIndex(p => (p.tipoAccion || '').includes('RETORNO'));
+          if (retIndex >= 0) {
+            result.paradas.splice(retIndex, 0, paradaMatch);
+          } else {
+            result.paradas.push(paradaMatch);
           }
         }
+
+        paradaMatch.expedientes.push(exp);
       });
+
+      // Reordenar índices de paradas
+      result.paradas.forEach((p, i) => { p.orden = i; });
 
       return result;
     }
@@ -2596,11 +2610,11 @@
 
 REGLAS ABSOLUTAS E INQUEBRANTABLES:
 1. PUNTOS BASE (TORREJÓN DE VELASCO): Las paradas de tipo "SALIDA BASE" o "RETORNO BASE" (Torrejón de Velasco) son únicamente los puntos de salida y llegada del camión de transporte. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su array "expedientes" debe estar vacío: []).
-2. DISTINCIÓN RECOGIDA (R) VS ENTREGA (E): 
-   - Analiza la tabla inferior de expedientes y albaranes.
-   - Las recogidas ocurren en el origen del albarán (ej: DCV Motor en Valladolid es una RECOGIDA, tipo R).
-   - Las entregas ocurren en el destino del albarán (ej: Malpica, Ferrol, etc., son ENTREGAS, tipo E).
-3. EXTRACCIÓN TOTAL: Extrae todas las paradas del itinerario superior y asigna correctamente cada albarán a su parada correspondiente sin omitir datos ni contactos.
+2. DISTINCIÓN CRÍTICA RECOGIDA (R) VS ENTREGA (E): 
+   - Analiza la tabla inferior de expedientes y albaranes línea por línea.
+   - Si un albarán se recoge en una ciudad (ej: Valladolid con DCV Motor, o el intercambio con Javier), el tipo debe ser obligatoriamente "RECOGIDA" y su localidad asociada es el Origen.
+   - Si un albarán se entrega en una ciudad (ej: Valladolid con Javier, o Malpica, o Ferrol), el tipo debe ser obligatoriamente "ENTREGA" y su localidad asociada es el Destino.
+3. EXTRACCIÓN TOTAL: Extrae todas las paradas y asigna correctamente cada albarán a su parada correspondiente sin omitir datos ni teléfonos de contacto.
 
 Devuelve EXCLUSIVAMENTE este JSON válido:
 {
@@ -2651,7 +2665,6 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
         rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
         let result = JSON.parse(rawText);
 
-        // Aplicar saneamiento automático Modo Dios
         result = sanitizeExtractedRoute(result);
 
         const newId = `ruta_${Date.now()}`;
