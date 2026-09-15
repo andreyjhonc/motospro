@@ -11,13 +11,11 @@
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏍️</text></svg>">
   
-  <title>Motos@Motos - Gestor de Rutas Cloud</title>
+  <title>Motos@Motos - Gestor de Rutas</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     :root {
@@ -171,7 +169,7 @@
         <button onclick="openStatsModal()" class="p-2 rounded-xl bg-[#0E1526] border border-[#1C263E] text-[#00E676] active:scale-95 transition-all hover:border-[#00E676]/50" title="Informes y Arqueo">
           📊
         </button>
-        <div id="cloud-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors" title="Estado Cloud"></div>
+        <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors"></div>
       </div>
     </header>
 
@@ -179,6 +177,15 @@
     <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 bg-[#FF007F] text-white px-4 py-2.5 rounded-full font-black text-xs shadow-2xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none max-w-[90%] text-center glow-pink">
       <span id="toast-text">Mensaje</span>
     </div>
+
+    <!-- INPUTS OCULTOS -->
+    <input type="file" id="albaran-camera-input" accept="image/*" capture="environment" class="hidden" onchange="processCapture(event, 'albaran')">
+    <input type="file" id="albaran-gallery-input" accept="image/*" class="hidden" onchange="processCapture(event, 'albaran')">
+    <input type="file" id="inspection-camera-input" accept="image/*" capture="environment" class="hidden" onchange="processCapture(event, 'inspection')">
+    <input type="file" id="inspection-gallery-input" accept="image/*" class="hidden" onchange="processCapture(event, 'inspection')">
+    <input type="file" id="restore-backup-input" accept=".json" class="hidden" onchange="handleRestoreBackup(event)">
+    <input type="file" id="single-albaran-camera" accept="image/*" capture="environment" class="hidden" onchange="handleSingleAlbaranSelected(event)">
+    <input type="file" id="single-albaran-gallery" accept="image/*" class="hidden" onchange="handleSingleAlbaranSelected(event)">
 
     <!-- CUERPO PRINCIPAL -->
     <main class="flex-1 overflow-y-auto no-scrollbar pb-6 md:pb-8 p-4 md:p-6 lg:p-8">
@@ -324,8 +331,8 @@
             Extrae automáticamente toda la secuencia de paradas, motos y albaranes de la hoja física.
           </p>
 
-          <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
-          <input type="file" id="gallery-input" accept="image/*" class="hidden">
+          <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelected(event)">
+          <input type="file" id="gallery-input" accept="image/*" class="hidden" onchange="handleFileSelected(event)">
 
           <div class="mt-4 grid grid-cols-2 gap-3">
             <button onclick="openNativeCamera()" class="bg-[#00E676] hover:bg-[#00c966] text-slate-950 font-black py-3 px-3 rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg glow-green text-xs">
@@ -353,9 +360,6 @@
             </select>
           </div>
 
-          <input type="file" id="single-albaran-camera" accept="image/*" capture="environment" class="hidden">
-          <input type="file" id="single-albaran-gallery" accept="image/*" class="hidden">
-
           <div class="mt-4 grid grid-cols-2 gap-3">
             <button onclick="openSingleAlbaranCamera()" class="bg-[#FF007F] hover:bg-[#e11d48] text-white font-black py-3 px-3 rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg glow-pink text-xs">
               <span>📷 Foto Albarán</span>
@@ -371,12 +375,6 @@
           </div>
         </div>
 
-        <input type="file" id="albaran-camera-input" accept="image/*" capture="environment" class="hidden">
-        <input type="file" id="albaran-gallery-input" accept="image/*" class="hidden">
-        <input type="file" id="inspection-camera-input" accept="image/*" capture="environment" class="hidden">
-        <input type="file" id="inspection-gallery-input" accept="image/*" class="hidden">
-        <input type="file" id="restore-backup-input" accept=".json" class="hidden">
-
         <div id="saved-routes-container" class="bg-[#0E1526] border border-[#1C263E] rounded-2xl p-4 hidden">
           <h3 class="text-xs font-bold text-slate-300 mb-2.5 flex items-center justify-between">
             <span id="saved-routes-count">Rutas Guardadas (0)</span>
@@ -388,7 +386,7 @@
 
       <!-- 4. PERITAJE INTEGRADO -->
       <section id="tab-peritaje" class="tab-content space-y-3 hidden">
-        <input type="file" id="peritaje-photo-input" accept="image/*" multiple class="hidden">
+        <input type="file" id="peritaje-photo-input" accept="image/*" multiple class="hidden" onchange="handlePeritajeFiles(event)">
 
         <div class="bg-[#0E1526] border border-[#1C263E] rounded-2xl p-4">
           <div class="flex items-start justify-between gap-3">
@@ -409,26 +407,21 @@
                 <div id="peritaje-exp-moto" class="text-xs font-bold text-white mt-0.5">Motocicleta</div>
                 <div id="peritaje-exp-client" class="text-[10px] text-slate-400 mt-0.5">Cliente</div>
               </div>
-              <button onclick="switchTab('rutas')" class="px-2.5 py-1.5 rounded-lg bg-[#1C263E] text-slate-300 text-[10px] font-bold hover:bg-[#253354]">← Ruta</button>
+              <button onclick="switchTab('rutas')" class="px-2.5 py-1.5 rounded-lg bg-[#1C263E] text-slate-300 text-[10px] font-bold">← Ruta</button>
             </div>
           </div>
 
           <div id="peritaje-empty" class="mt-4 text-center py-8 border border-dashed border-[#1C263E] rounded-xl">
             <div class="text-3xl mb-2">🏍️</div>
             <p class="text-xs font-bold text-slate-300">Selecciona una moto desde la ruta</p>
-            <p class="text-[10px] text-slate-500 mt-1">Después podrás añadir fotos en HD y analizarlas.</p>
+            <p class="text-[10px] text-slate-500 mt-1">Después podrás añadir varias fotos y analizarlas.</p>
             <button onclick="switchTab('rutas')" class="mt-3 px-4 py-2 rounded-xl bg-[#00E676] text-slate-950 text-xs font-black glow-green">Abrir rutas</button>
           </div>
 
           <div id="peritaje-workspace" class="hidden mt-3 space-y-3">
-            <button onclick="exportPeritajeHD_PDF()" class="w-full py-3 rounded-xl bg-[#FF007F] hover:bg-[#E11D48] text-white font-black text-xs flex items-center justify-center space-x-2 shadow-lg glow-pink active:scale-95 transition-all">
-              <span>📄</span>
-              <span>EXPORTAR INFORME PERITAJE PDF (HD)</span>
-            </button>
-
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="document.getElementById('peritaje-photo-input').click()" class="py-2.5 rounded-xl bg-[#1C263E] hover:bg-[#253354] border border-[#2D3D63] text-white font-black text-xs active:scale-95 transition-all">📷 Añadir fotos HD</button>
-              <button onclick="analyzeAllPeritaje()" id="btn-analyze-all" class="py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00c966] text-slate-950 font-black text-xs glow-green active:scale-95 transition-all">🤖 Analizar todo</button>
+              <button onclick="document.getElementById('peritaje-photo-input').click()" class="py-2.5 rounded-xl bg-[#FF007F] text-white font-black text-xs glow-pink">📷 Añadir fotos</button>
+              <button onclick="analyzeAllPeritaje()" id="btn-analyze-all" class="py-2.5 rounded-xl bg-[#00E676] text-slate-950 font-black text-xs glow-green">🤖 Analizar todo</button>
             </div>
 
             <div id="peritaje-photos" class="grid grid-cols-3 gap-2"></div>
@@ -603,7 +596,7 @@
           <h3 class="font-bold text-base text-white">¿Eliminar esta ruta?</h3>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed mb-4">
-          Se borrará todo el itinerario, albaranes, fotos de inspección en 12 MP y firmas de la nube y de este dispositivo. Esta acción no se puede deshacer.
+          Se borrará todo el itinerario, albaranes, fotos de inspección en 12 MP y firmas. Esta acción no se puede deshacer.
         </p>
         <div class="flex space-x-2">
           <button onclick="closeDeleteModal()" class="flex-1 py-2.5 bg-[#1C263E] text-slate-200 font-bold rounded-xl text-xs">
@@ -758,13 +751,7 @@
 
   <div id="pdf-render-sandbox"></div>
 
-  <!-- CONEXIÓN SUPABASE CLOUD & INDEXEDDB DE RESPALDO -->
   <script>
-    const SUPABASE_URL = 'https://bvjjdqywzbpvxjksderg.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2ampkcXl3emJwdnhqa3NkZXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0ODk4MDgsImV4cCI6MjEwNTA2NTgwOH0.0sWBmOebkEpt4VkqvgFGXAVMmA_2GA127Md2CbXhoWo';
-    
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     const DB_NAME = 'MotosMotosDB_Pro';
     const DB_VERSION = 1;
     let dbInstance = null;
@@ -783,49 +770,6 @@
     }
 
     async function dbGetAllRoutes() {
-      try {
-        const { data, error } = await supabaseClient.from('rutas').select('data');
-        if (error) throw error;
-        if (data && data.length > 0) {
-          const cloudRoutes = data.map(d => d.data);
-          for (const r of cloudRoutes) await localSaveRoute(r);
-          updateCloudStatus(true);
-          return cloudRoutes;
-        }
-      } catch (err) {
-        console.warn('Supabase offline o error, usando caché local:', err.message);
-        updateCloudStatus(false);
-      }
-      return await localGetAllRoutes();
-    }
-
-    async function dbSaveRoute(route) {
-      await localSaveRoute(route);
-      try {
-        const { error } = await supabaseClient.from('rutas').upsert({
-          id: route.id,
-          data: route,
-          updated_at: new Date().toISOString()
-        });
-        if (error) throw error;
-        updateCloudStatus(true);
-      } catch (err) {
-        console.warn('Error guardando en Supabase:', err.message);
-        updateCloudStatus(false);
-      }
-    }
-
-    async function dbDeleteRoute(id) {
-      await localDeleteRoute(id);
-      try {
-        const { error } = await supabaseClient.from('rutas').delete().eq('id', id);
-        if (error) throw error;
-      } catch (err) {
-        console.warn('Error eliminando en Supabase:', err.message);
-      }
-    }
-
-    function localGetAllRoutes() {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('routes', 'readonly');
         const req = tx.objectStore('routes').getAll();
@@ -834,7 +778,7 @@
       });
     }
 
-    function localSaveRoute(route) {
+    async function dbSaveRoute(route) {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('routes', 'readwrite');
         tx.objectStore('routes').put(route);
@@ -843,7 +787,7 @@
       });
     }
 
-    function localDeleteRoute(id) {
+    async function dbDeleteRoute(id) {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('routes', 'readwrite');
         tx.objectStore('routes').delete(id);
@@ -852,7 +796,7 @@
       });
     }
 
-    function dbGetConfig(key) {
+    async function dbGetConfig(key) {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('config', 'readonly');
         const req = tx.objectStore('config').get(key);
@@ -861,64 +805,13 @@
       });
     }
 
-    function dbSetConfig(key, value) {
+    async function dbSetConfig(key, value) {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('config', 'readwrite');
         tx.objectStore('config').put({ key, value });
         tx.oncomplete = () => resolve(true);
         tx.onerror = () => resolve(false);
       });
-    }
-
-    function updateCloudStatus(online) {
-      const el = safeDOM('cloud-indicator');
-      if (!el) return;
-      if (online) {
-        el.className = 'w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse';
-        el.title = 'Conectado a Supabase Cloud (Sincronizado)';
-      } else {
-        el.className = 'w-2.5 h-2.5 rounded-full bg-[#FF007F]';
-        el.title = 'Modo Local (Sin sincronización)';
-      }
-    }
-
-    async function uploadPhotoToSupabase(fileBlob, fileName) {
-      try {
-        const path = `peritajes/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '')}`;
-        const { data, error } = await supabaseClient.storage.from('fotos').upload(path, fileBlob, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        if (error) throw error;
-        const { data: pubUrl } = supabaseClient.storage.from('fotos').getPublicUrl(path);
-        return pubUrl.publicUrl;
-      } catch (err) {
-        console.warn('Error subiendo foto a Supabase Storage, usando dataUrl local:', err.message);
-        return null;
-      }
-    }
-
-    function setupRealtimeListener() {
-      supabaseClient
-        .channel('rutas_channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'rutas' }, async (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const updatedRoute = payload.new.data;
-            const idx = routes.findIndex(r => r.id === updatedRoute.id);
-            if (idx >= 0) routes[idx] = updatedRoute;
-            else routes.unshift(updatedRoute);
-            await localSaveRoute(updatedRoute);
-          } else if (payload.eventType === 'DELETE') {
-            routes = routes.filter(r => r.id !== payload.old.id);
-            await localDeleteRoute(payload.old.id);
-          }
-          updateAllUI();
-          if (document.getElementById('tab-rutas')?.classList.contains('hidden') === false) {
-            renderRoutesTab();
-          }
-          showToast('🔄 Cambios sincronizados de la nube');
-        })
-        .subscribe();
     }
 
     let routes = [];
@@ -961,45 +854,18 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       await initDB();
-      activeRouteId = await dbGetConfig('activeRouteId');
-      
-      try {
-        const { data } = await supabaseClient.from('app_config').select('value').eq('key', 'gemini_api_key').single();
-        if (data && data.value) {
-          userApiKey = data.value;
-        }
-      } catch (_) {}
-
-      if (!userApiKey) {
-        userApiKey = (await dbGetConfig('userApiKey')) || localStorage.getItem('motos_gemini_api_key') || '';
-      }
-
       routes = await dbGetAllRoutes();
+      activeRouteId = await dbGetConfig('activeRouteId');
+      userApiKey = (await dbGetConfig('userApiKey')) || localStorage.getItem('motos_gemini_api_key') || '';
+
       if (!activeRouteId && routes.length > 0) activeRouteId = routes[0].id;
 
       const apiInput = safeDOM('api-key-input');
       if (apiInput) apiInput.value = userApiKey;
 
-      const bindFileEvent = (id, cb) => {
-        const el = safeDOM(id);
-        if (el) el.onchange = cb;
-      };
-
-      bindFileEvent('camera-input', handleFileSelected);
-      bindFileEvent('gallery-input', handleFileSelected);
-      bindFileEvent('single-albaran-camera', handleSingleAlbaranSelected);
-      bindFileEvent('single-albaran-gallery', handleSingleAlbaranSelected);
-      bindFileEvent('albaran-camera-input', (e) => processCapture(e, 'albaran'));
-      bindFileEvent('albaran-gallery-input', (e) => processCapture(e, 'albaran'));
-      bindFileEvent('inspection-camera-input', (e) => processCapture(e, 'inspection'));
-      bindFileEvent('inspection-gallery-input', (e) => processCapture(e, 'inspection'));
-      bindFileEvent('restore-backup-input', handleRestoreBackup);
-      bindFileEvent('peritaje-photo-input', handlePeritajeFiles);
-
       checkApiKeyWarning();
       switchTab(routes.length > 0 ? 'rutas' : 'nueva');
       updateAllUI();
-      setupRealtimeListener();
     });
 
     async function persistRoute(route) {
@@ -1047,6 +913,16 @@
 
     function updateAllUI() {
       const active = getActiveRoute();
+      
+      if (routes.length > 0) {
+        safeClass('status-indicator', 'remove', 'bg-slate-600');
+        safeClass('status-indicator', 'add', 'bg-[#00E676]');
+        safeClass('status-indicator', 'add', 'animate-pulse');
+      } else {
+        safeClass('status-indicator', 'remove', 'bg-[#00E676]');
+        safeClass('status-indicator', 'remove', 'animate-pulse');
+        safeClass('status-indicator', 'add', 'bg-slate-600');
+      }
 
       const totalKmGlobal = routes.reduce((acc, r) => acc + (Number(r.totalKm) || 0), 0);
       const totalMotosGlobal = routes.reduce((acc, r) => {
@@ -1183,7 +1059,9 @@
         stopsList.innerHTML = active.paradas.map(p => {
           const esCompletada = p.estado === 'completada';
           const tieneIncidencia = p.estado === 'incidencia';
-          const esBase = p.esOrigen || p.esFin || (p.tipoAccion && p.tipoAccion.includes('BASE'));
+          const esRecogida = p.tipoAccion && p.tipoAccion.includes('(R)');
+          const esEntrega = p.tipoAccion && p.tipoAccion.includes('(E)');
+          const esBase = p.esOrigen || p.esFin;
           const tiempoTramo = p.kmTramo > 0 ? calcularTiempoEstimado(p.kmTramo) : null;
 
           let nodeBg = 'bg-[#1C263E] text-slate-300 border-slate-600';
@@ -1193,17 +1071,14 @@
           else nodeBg = 'bg-[#FF007F] text-white border-pink-300';
 
           let badgeBg = 'bg-slate-800 text-slate-300 border-slate-700';
-          if (p.tipoAccion && p.tipoAccion.includes('(R)')) badgeBg = 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40';
-          if (p.tipoAccion && p.tipoAccion.includes('(E)')) badgeBg = 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
+          if (esRecogida) badgeBg = 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40';
+          if (esEntrega) badgeBg = 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
 
           let expedientesHtml = '';
           if (p.expedientes && p.expedientes.length > 0) {
             expedientesHtml = `
               <div class="mt-3 space-y-3.5 pt-2.5 border-t border-[#1C263E]/70">
                 ${p.expedientes.map((exp, eIdx) => {
-                  const tipoUpper = (exp.tipo || '').toUpperCase();
-                  const esRecogida = tipoUpper.includes('RECOGIDA') || tipoUpper.includes('R');
-                  
                   const cliente = esRecogida ? exp.clienteOrigen : exp.clienteDestino;
                   const tel = esRecogida ? exp.telOrigen : exp.telDestino;
                   const rutaTexto = `${exp.locOrigen || '---'} ➔ ${exp.locDestino || '---'}`;
@@ -1224,18 +1099,15 @@
                     <div class="p-3.5 rounded-2xl border transition-all flex flex-col space-y-3 ${cardHighlight}">
                       <div class="flex items-start justify-between">
                         <div>
-                          <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                          <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-black text-[#00E676] font-mono">${exp.expediente || 'S/N'}</span>
-                            <span class="text-[9px] px-2 py-0.5 rounded font-black uppercase ${esRecogida ? 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40' : 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40'}">
-                              ${esRecogida ? '🔴 RECOGIDA (R)' : '🟢 ENTREGA (E)'}
-                            </span>
                             <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#1C263E] text-slate-300 font-mono font-bold">
                               ${esEfectivo ? (exp.importeEfectivo || '0') + ' €' : (exp.importe || 'TRANS')}
                             </span>
                             ${estadoExp === 'hecha' ? `<span class="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40">✓ HECHA</span>` : ''}
                             ${estadoExp === 'anulada' ? `<span class="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-red-500/20 text-red-300 border border-red-500/40">✕ ANULADA</span>` : ''}
                           </div>
-                          <div class="text-xs font-bold text-white mt-1">🏍️ ${exp.moto || 'Motocicleta'}</div>
+                          <div class="text-xs font-bold text-white mt-0.5">🏍️ ${exp.moto || 'Motocicleta'}</div>
                           <div class="text-[11px] text-slate-300 mt-0.5">👤 <strong>${cliente || 'Sin nombre'}</strong> (${tel || 'Sin teléfono'})</div>
                           <div class="text-[10px] text-slate-400">📍 ${rutaTexto}</div>
                         </div>
@@ -1609,22 +1481,15 @@
         const targetRoute = routes.find(r => r.id === routeId);
         const exp = targetRoute.paradas.find(p => p.id === stopId).expedientes[expIdx];
 
-        let cloudUrl = null;
-        try {
-          cloudUrl = await uploadPhotoToSupabase(file, file.name);
-        } catch (_) {}
-
-        const finalPhotoUrl = cloudUrl || originalBase64;
-
         if (captureType === 'albaran') {
-          exp.fotoAlbaran = finalPhotoUrl;
+          exp.fotoAlbaran = originalBase64;
           exp.fotoAlbaranThumb = thumbnail;
           exp.fotoAlbaranFecha = new Date().toLocaleString('es-ES');
         } else {
           if (!exp.fotosInspeccion) exp.fotosInspeccion = [];
           exp.fotosInspeccion.push({
             id: `insp_${Date.now()}`,
-            data: finalPhotoUrl,
+            data: originalBase64,
             thumb: thumbnail,
             fecha: new Date().toLocaleString('es-ES')
           });
@@ -1632,7 +1497,7 @@
 
         await persistRoute(targetRoute);
         renderRoutesTab();
-        showToast('✅ Guardado en Supabase Cloud');
+        showToast('✅ Fotografía guardada en IndexedDB');
         event.target.value = '';
       };
       reader.readAsDataURL(file);
@@ -1800,7 +1665,7 @@
       await persistRoute(targetRoute);
       closeSignatureModal();
       renderRoutesTab();
-      showToast('✅ Firma digital guardada');
+      showToast('✅ Firma digital registrada');
     }
 
     async function exportBackup(includeFullPhotos) {
@@ -1870,8 +1735,7 @@
       showToast(`Generando Ficha A4 para ${exp.expediente || 'Albarán'}...`);
 
       const sandbox = safeDOM('pdf-render-sandbox');
-      const tipoUpper = (exp.tipo || '').toUpperCase();
-      const esRecogida = tipoUpper.includes('RECOGIDA') || tipoUpper.includes('R');
+      const esRecogida = parada.tipoAccion && parada.tipoAccion.includes('(R)');
       const esEfectivo = exp.metodoPago === 'EFECTIVO';
       const cliente = esRecogida ? exp.clienteOrigen : exp.clienteDestino;
       const tel = esRecogida ? exp.telOrigen : exp.telDestino;
@@ -1899,7 +1763,7 @@
                 ${labels[i]}
               </div>
               <div style="height: 94px; background: #070A12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                <img src="${fotoObj.data || fotoObj.thumb}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="${fotoObj.data || fotoObj.thumb}" style="width: 100%; height: 100%; object-fit: cover;">
               </div>
               <div style="font-size: 7.5px; text-align: center; font-family: monospace; padding: 2px; color: #94A3B8; background: #070A12;">
                 ${fotoObj.fecha || 'Inspección 12MP'}
@@ -1916,10 +1780,6 @@
           `;
         }
       }
-
-      const per = exp.peritaje || {};
-      const photos = per.photos || [];
-      const allDamages = photos.flatMap((p, pi) => (p.damages || []).map(d => ({ ...d, _photo: p.name || ('Foto ' + (pi + 1)) })));
 
       sandbox.innerHTML = `
         <div style="width: 794px; min-width: 794px; max-width: 794px; min-height: 1120px; padding: 24px; background-color: #070A12; color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
@@ -1967,8 +1827,8 @@
               <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 8px; padding: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1C263E; padding-bottom: 4px; margin-bottom: 6px;">
                   <span style="font-size: 8.5px; font-weight: 900; text-transform: uppercase; color: #00E676;">📦 INFORMACIÓN DE ENVÍO</span>
-                  <span style="font-size: 7.5px; font-weight: bold; padding: 1px 5px; border-radius: 4px; ${esRecogida ? 'background: rgba(255,0,127,0.15); color: #FF007F; border: 1px solid #FF007F;' : 'background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676;'}">
-                    ${esRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)'}
+                  <span style="font-size: 7.5px; font-weight: bold; padding: 1px 5px; border-radius: 4px; background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676;">
+                    ${parada.tipoAccion || 'ENTREGA (E)'}
                   </span>
                 </div>
                 <div style="margin-bottom: 6px;">
@@ -2019,10 +1879,9 @@
               </div>
             </div>
 
-            <!-- INSPECCIÓN + PERITAJE IA -->
             <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1C263E; padding-bottom: 4px; margin-bottom: 6px;">
-                <span style="font-size: 8.5px; font-weight: 900; text-transform: uppercase; color: #00E676;">📝 INSPECCIÓN DE ESTADO, OBSERVACIONES Y PERITAJE IA</span>
+                <span style="font-size: 8.5px; font-weight: 900; text-transform: uppercase; color: #00E676;">📝 INSPECCIÓN DE ESTADO Y DAÑOS</span>
                 <span style="font-size: 8px; font-weight: 900; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; ${estadoExp === 'hecha' ? 'background: rgba(0, 230, 118, 0.15); color: #00E676;' : (estadoExp === 'anulada' ? 'background: #7F1D1D; color: #FECACA;' : 'background: #1E293B; color: #94A3B8;')}">
                   ${estadoExp === 'hecha' ? '✓ ALBARÁN HECHO' : (estadoExp === 'anulada' ? '✕ ALBARÁN ANULADO' : 'PENDIENTE')}
                 </span>
@@ -2035,40 +1894,16 @@
                   if (c.color === 'red') { bg = '#7F1D1D'; text = '#FECACA'; border = '#DC2626'; }
                   return `<span style="font-size: 7.5px; font-weight: bold; background: ${bg}; color: ${text}; border: 1px solid ${border}; padding: 1px 5px; border-radius: 5px;">${c.text}</span>`;
                 }).join('') : `
-                  <span style="font-size: 7.5px; font-weight: bold; background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676; padding: 1px 5px; border-radius: 5px;">✓ Sin marcas manuales</span>
+                  <span style="font-size: 7.5px; font-weight: bold; background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676; padding: 1px 5px; border-radius: 5px;">✓ Sin daños aparentes en inspección</span>
                 `}
               </div>
 
-              <div style="background: #070A12; border: 1px solid #1C263E; border-radius: 6px; padding: 6px 8px; font-size: 9px; color: #CBD5E1; line-height: 1.4; margin-bottom: 6px;">
-                <div><strong style="color: #00E676;">Observaciones del Chófer:</strong> ${exp.observaciones || 'Sin anotaciones adicionales.'}</div>
-                ${per.notes ? `
-                  <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #1C263E;">
-                    <strong style="color: #FF007F;">Notas del Peritaje:</strong> ${escapeHtmlSafe(per.notes)}
-                  </div>
-                ` : ''}
+              <div style="background: #070A12; border: 1px solid #1C263E; border-radius: 6px; padding: 6px 8px; font-size: 9.5px; color: #CBD5E1; line-height: 1.35;">
+                <strong style="color: #00E676;">Observaciones del Chófer:</strong> ${exp.observaciones || 'Vehículo revisado sin desperfectos superficiales detectados.'}
               </div>
-
-              ${allDamages.length > 0 ? `
-                <div style="background: #070A12; border: 1px solid #1C263E; border-radius: 6px; padding: 6px 8px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <span style="font-size: 8px; font-weight: 900; color: #FF007F; text-transform: uppercase;">🛡️ Daños detectados por Peritaje IA (${allDamages.length})</span>
-                    <span style="font-size: 7.5px; font-family: monospace; color: #00E676;">Score: ${per.score !== null && per.score !== undefined ? per.score + '/100' : '—'}</span>
-                  </div>
-                  <div style="display: flex; flex-direction: column; gap: 3px;">
-                    ${allDamages.map((d, i) => `
-                      <div style="display: flex; justify-content: space-between; align-items: center; background: #0E1526; padding: 3px 6px; border-radius: 4px; font-size: 8px; border-left: 2px solid ${d.severity && d.severity.toLowerCase().includes('grave') ? '#FF007F' : '#00E676'};">
-                        <span style="color: #F8FAFC;"><strong>${i + 1}. ${escapeHtmlSafe(d.type || 'Daño')}</strong> (${escapeHtmlSafe(d.location || 'Zona no indicada')})</span>
-                        <span style="font-weight: bold; color: ${d.severity && d.severity.toLowerCase().includes('grave') ? '#FF007F' : '#00E676'}; font-size: 7.5px;">${escapeHtmlSafe(d.severity || 'Leve')}</span>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              ` : `
-                <div style="background: #070A12; border: 1px solid #1C263E; border-radius: 6px; padding: 5px 8px; font-size: 8px; color: #00E676;">
-                  🛡️ <strong>Peritaje IA:</strong> No se han detectado daños visuales o está pendiente de fotos.
-                </div>
-              `}
             </div>
+
+            ${buildPeritajePdfHtml(exp, false)}
 
             <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -2089,7 +1924,7 @@
                   </span>
                 </div>
                 <div style="height: 84px; background: #070A12; border: 1px dashed #1C263E; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  ${exp.fotoAlbaran ? `<img src="${exp.fotoAlbaran}" crossorigin="anonymous" style="max-height: 100%; max-width: 100%; object-fit: contain;">` : `<span style="font-size: 8.5px; color: #64748B;">Sin captura en papel</span>`}
+                  ${exp.fotoAlbaran ? `<img src="${exp.fotoAlbaran}" style="max-height: 100%; max-width: 100%; object-fit: contain;">` : `<span style="font-size: 8.5px; color: #64748B;">Sin captura en papel</span>`}
                 </div>
               </div>
 
@@ -2125,7 +1960,36 @@
             width: 794,
             height: realHeight,
             windowWidth: 800,
-            windowHeight: realHeight + 100
+            windowHeight: realHeight + 100,
+            onclone: (clonedDoc) => {
+              clonedDoc.querySelectorAll('meta[name="viewport"]').forEach(m => m.remove());
+              clonedDoc.documentElement.style.width = '794px';
+              clonedDoc.documentElement.style.minWidth = '794px';
+              clonedDoc.body.style.width = '794px';
+              clonedDoc.body.style.minWidth = '794px';
+              clonedDoc.body.style.overflow = 'visible';
+
+              const pdfStyle = clonedDoc.createElement('style');
+              pdfStyle.textContent = `
+                #pdf-render-sandbox, #pdf-render-sandbox * { box-sizing: border-box !important; }
+                #pdf-render-sandbox p { margin: 0 !important; line-height: 1.3 !important; }
+                #pdf-render-sandbox span, #pdf-render-sandbox strong { line-height: 1.25 !important; vertical-align: middle !important; }
+                #pdf-render-sandbox img { display: block !important; }
+              `;
+              clonedDoc.head.appendChild(pdfStyle);
+
+              const s = clonedDoc.getElementById('pdf-render-sandbox');
+              if (s) {
+                s.style.position = 'static';
+                s.style.top = '0';
+                s.style.left = '0';
+                s.style.width = '794px';
+                s.style.minWidth = '794px';
+                s.style.display = 'block';
+                s.style.height = 'auto';
+                s.style.overflow = 'visible';
+              }
+            }
           });
 
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -2155,170 +2019,6 @@
           showToast('❌ Error generando PDF');
         }
       }, 200);
-    }
-
-    async function exportPeritajeHD_PDF() {
-      const { r, s, e } = getPeritajeExp();
-      if (!e) return showToast('Selecciona primero un expediente');
-
-      const per = e.peritaje || {};
-      const photos = per.photos || [];
-      if (photos.length === 0) return showToast('Añade al menos una foto de peritaje');
-
-      showToast('Compilando páginas HD sin cortes...');
-      const sandbox = safeDOM('pdf-render-sandbox');
-      const allDamages = photos.flatMap((p, pi) => (p.damages || []).map(d => ({ ...d, _photo: p.name || ('Foto ' + (pi + 1)) })));
-      const client = e.clienteDestino || e.clienteOrigen || 'Sin cliente';
-      const phone = e.telDestino || e.telOrigen || '';
-
-      let pagesHtml = `
-        <div class="pdf-page" style="width: 794px; min-width: 794px; height: 1120px; min-height: 1120px; max-height: 1120px; padding: 28px; background-color: #070A12; color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden; position: relative;">
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1C263E; padding-bottom: 12px; margin-bottom: 14px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 46px; height: 46px; background: #0E1526; border: 1px solid #1C263E; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🛡️</div>
-                <div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-weight: 900; font-size: 19px; color: #00E676;">Motos@Motos</span>
-                    <span style="font-size: 9px; font-weight: bold; background: #090E1A; color: #FF007F; border: 1px solid #FF007F; padding: 2px 8px; border-radius: 9999px;">INFORME PERITAJE IA</span>
-                  </div>
-                  <p style="font-size: 8.5px; color: #94A3B8; margin: 3px 0 0 0;">Inspección Óptica Digital y Detección de Daños de Motocicletas</p>
-                </div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 13px; font-weight: 900; font-family: monospace; color: #00E676; background: #0E1526; padding: 4px 10px; border-radius: 6px; border: 1px solid #1C263E; display: inline-block;">
-                  EXP: #${e.expediente || 'S/N'}
-                </div>
-                <div style="font-size: 8.5px; color: #94A3B8; font-family: monospace; margin-top: 4px;">Fecha: ${new Date().toLocaleDateString('es-ES')}</div>
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #0E1526; border: 1px solid #1C263E; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 10px;">
-              <div>
-                <span style="font-size: 7.5px; color: #94A3B8; text-transform: uppercase; font-weight: bold; display: block;">VEHÍCULO</span>
-                <strong style="color: #FFFFFF; font-size: 11px;">${e.moto || 'Motocicleta'}</strong>
-              </div>
-              <div>
-                <span style="font-size: 7.5px; color: #94A3B8; text-transform: uppercase; font-weight: bold; display: block;">CLIENTE</span>
-                <strong style="color: #F1F5F9;">${escapeHtmlSafe(client)}</strong>
-                <span style="font-size: 8px; color: #94A3B8; display: block;">${phone}</span>
-              </div>
-              <div>
-                <span style="font-size: 7.5px; color: #94A3B8; text-transform: uppercase; font-weight: bold; display: block;">SCORE DE ESTADO</span>
-                <strong style="color: ${per.score !== null && per.score < 75 ? '#FF007F' : '#00E676'}; font-family: monospace; font-size: 11px;">${per.score !== null && per.score !== undefined ? per.score + '/100' : 'Score —'}</strong>
-              </div>
-              <div>
-                <span style="font-size: 7.5px; color: #94A3B8; text-transform: uppercase; font-weight: bold; display: block;">DAÑOS TOTALES</span>
-                <strong style="color: #FF007F; font-family: monospace; font-size: 11px;">${allDamages.length} detectados</strong>
-              </div>
-            </div>
-
-            <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.45;">
-              <div><strong style="color: #00E676;">Observaciones del Perito:</strong> ${escapeHtmlSafe(per.notes || e.observaciones || 'Inspección realizada sin observaciones manuales.')}</div>
-            </div>
-
-            <div style="background: #0E1526; border: 1px solid #1C263E; border-radius: 10px; padding: 12px; margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 9.5px; font-weight: 900; color: #FF007F; text-transform: uppercase;">
-                  🔍 Cuadro de Defectos y Lesiones Superficiales (${allDamages.length})
-                </span>
-                <span style="font-size: 8px; color: #94A3B8; font-mono;">${photos.length} Fotos HD adjuntas</span>
-              </div>
-              ${allDamages.length > 0 ? `
-                <div style="display: flex; flex-direction: column; gap: 5px; max-height: 620px; overflow: hidden;">
-                  ${allDamages.map((d, i) => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: #070A12; border: 1px solid #1C263E; padding: 6px 10px; border-radius: 6px; font-size: 9px; border-left: 3px solid ${d.severity && d.severity.toLowerCase().includes('grave') ? '#FF007F' : '#00E676'};">
-                      <div>
-                        <strong style="color: #FFFFFF;">${i + 1}. ${escapeHtmlSafe(d.type || 'Daño')}</strong>
-                        <span style="color: #94A3B8; margin-left: 6px;">${escapeHtmlSafe(d.location || 'Zona no indicada')} (${escapeHtmlSafe(d._photo)})</span>
-                      </div>
-                      <div style="display: flex; gap: 10px; align-items: center;">
-                        <span style="color: #94A3B8; font-size: 8px;">Acción: <strong style="color: #E2E8F0;">${escapeHtmlSafe(d.repairAction || 'Revisar')}</strong></span>
-                        <span style="font-weight: 900; color: ${d.severity && d.severity.toLowerCase().includes('grave') ? '#FF007F' : '#00E676'}; font-size: 8.5px;">${escapeHtmlSafe(d.severity || 'Leve')}</span>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              ` : `
-                <div style="font-size: 9px; color: #00E676; padding: 10px 0;">✓ No se han detectado daños ni desperfectos visuales en esta inspección.</div>
-              `}
-            </div>
-          </div>
-
-          <div style="border-top: 1px solid #1C263E; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #64748B; font-family: monospace;">
-            <span>Motos & Motos Trans S.L. • Certificado Oficial de Peritaje</span>
-            <span style="color: #00E676; font-weight: bold;">Página 1 de ${photos.length + 1}</span>
-          </div>
-        </div>
-      `;
-
-      photos.forEach((p, idx) => {
-        pagesHtml += `
-          <div class="pdf-page" style="width: 794px; min-width: 794px; height: 1120px; min-height: 1120px; max-height: 1120px; padding: 28px; background-color: #070A12; color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden; position: relative;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1C263E; padding-bottom: 10px; margin-bottom: 14px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 900; font-size: 15px; color: #00E676;">📸 TOMA HD #${idx + 1}</span>
-                  <span style="font-size: 8.5px; font-mono; color: #94A3B8;">${escapeHtmlSafe(p.name || 'Foto')}</span>
-                </div>
-                <span style="font-size: 9px; font-weight: 900; color: ${(p.damages || []).length > 0 ? '#FF007F' : '#00E676'}; background: #0E1526; border: 1px solid #1C263E; padding: 3px 8px; border-radius: 6px;">
-                  ${(p.damages || []).length} daño(s) en esta imagen
-                </span>
-              </div>
-
-              <div style="width: 100%; height: 860px; background: #000000; border: 1px solid #1C263E; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; box-sizing: border-box;">
-                <img src="${p.dataUrl}" crossorigin="anonymous" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; border-radius: 6px;">
-              </div>
-
-              ${p.summary ? `
-                <div style="margin-top: 10px; background: #0E1526; border: 1px solid #1C263E; border-radius: 8px; padding: 8px 12px; font-size: 8.5px; color: #CBD5E1;">
-                  <strong style="color: #00E676;">Diagnóstico de la toma:</strong> ${escapeHtmlSafe(p.summary)}
-                </div>
-              ` : ''}
-            </div>
-
-            <div style="border-top: 1px solid #1C263E; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #64748B; font-family: monospace;">
-              <span>Motos & Motos Trans S.L. • Evidencia Fotográfica HD Nativa</span>
-              <span style="color: #00E676; font-weight: bold;">Página ${idx + 2} de ${photos.length + 1}</span>
-            </div>
-          </div>
-        `;
-      });
-
-      sandbox.innerHTML = pagesHtml;
-
-      setTimeout(async () => {
-        try {
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-          const pageElements = sandbox.querySelectorAll('.pdf-page');
-
-          for (let i = 0; i < pageElements.length; i++) {
-            const el = pageElements[i];
-            const canvas = await html2canvas(el, {
-              scale: 2,
-              useCORS: true,
-              logging: false,
-              backgroundColor: '#070A12',
-              width: 794,
-              height: 1120
-            });
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.98);
-            const pdfW = pdf.internal.pageSize.getWidth();
-            const pdfH = pdf.internal.pageSize.getHeight();
-
-            if (i > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-          }
-
-          pdf.save(`Peritaje_${(e.expediente || 'S_N').replace(/[^a-zA-Z0-9]/g, '_')}_${(e.moto || 'Moto').replace(/\s+/g, '_')}.pdf`);
-          sandbox.innerHTML = '';
-          showToast('✅ Informe de Peritaje HD descargado sin cortes');
-        } catch (err) {
-          showToast('❌ Error generando PDF de peritaje');
-        }
-      }, 250);
     }
 
     async function exportModernRoutePDF() {
@@ -2358,6 +2058,7 @@
                   ${e.estado === 'anulada' ? '✕ Anulada' : (e.estado === 'hecha' ? '✓ Hecha' : 'Pendiente')}
                 </span>
               </div>
+              ${buildPeritajePdfHtml(e, true)}
             </div>
           `).join('');
         }
@@ -2450,7 +2151,30 @@
             width: 794,
             height: realHeight,
             windowWidth: 800,
-            windowHeight: realHeight + 100
+            windowHeight: realHeight + 100,
+            onclone: (clonedDoc) => {
+              clonedDoc.querySelectorAll('meta[name="viewport"]').forEach(m => m.remove());
+              clonedDoc.documentElement.style.width = '794px';
+              clonedDoc.body.style.width = '794px';
+
+              const pdfStyle = clonedDoc.createElement('style');
+              pdfStyle.textContent = `
+                #pdf-render-sandbox, #pdf-render-sandbox * { box-sizing: border-box !important; }
+                #pdf-render-sandbox p { margin: 0 !important; line-height: 1.3 !important; }
+                #pdf-render-sandbox span, #pdf-render-sandbox strong { line-height: 1.25 !important; vertical-align: middle !important; }
+                #pdf-render-sandbox img { display: block !important; }
+              `;
+              clonedDoc.head.appendChild(pdfStyle);
+
+              const s = clonedDoc.getElementById('pdf-render-sandbox');
+              if (s) {
+                s.style.position = 'static';
+                s.style.width = '794px';
+                s.style.display = 'block';
+                s.style.height = 'auto';
+                s.style.overflow = 'visible';
+              }
+            }
           });
 
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -2481,30 +2205,19 @@
       }, 200);
     }
 
-    function openNativeCamera() { 
-      if (!userApiKey) { showToast('Ingresa tu API Key'); switchTab('ajustes'); return; } 
-      const input = safeDOM('camera-input');
-      if (input) input.click();
-    }
-    
-    function openGalleryPicker() { 
-      if (!userApiKey) { showToast('Ingresa tu API Key'); switchTab('ajustes'); return; } 
-      const input = safeDOM('gallery-input');
-      if (input) input.click();
-    }
+    function openNativeCamera() { if (!userApiKey) { showToast('Ingresa tu API Key'); switchTab('ajustes'); return; } safeDOM('camera-input').click(); }
+    function openGalleryPicker() { if (!userApiKey) { showToast('Ingresa tu API Key'); switchTab('ajustes'); return; } safeDOM('gallery-input').click(); }
 
     function openSingleAlbaranCamera() {
       if (!userApiKey) { showToast('Ingresa tu API Key en Ajustes'); switchTab('ajustes'); return; }
       if (routes.length === 0) { showToast('Crea primero una ruta o sube una hoja'); return; }
-      const input = safeDOM('single-albaran-camera');
-      if (input) input.click();
+      safeDOM('single-albaran-camera').click();
     }
 
     function openSingleAlbaranGallery() {
       if (!userApiKey) { showToast('Ingresa tu API Key en Ajustes'); switchTab('ajustes'); return; }
       if (routes.length === 0) { showToast('Crea primero una ruta o sube una hoja'); return; }
-      const input = safeDOM('single-albaran-gallery');
-      if (input) input.click();
+      safeDOM('single-albaran-gallery').click();
     }
 
     function handleFileSelected(event) {
@@ -2526,7 +2239,7 @@
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-          safeText('scan-status-text', 'Extrayendo paradas y recogidas con Gemini...');
+          safeText('scan-status-text', 'Extrayendo paradas con Gemini...');
           await processRouteImage(base64, 'image/jpeg');
           safeDOM('camera-input').value = '';
           safeDOM('gallery-input').value = '';
@@ -2536,97 +2249,10 @@
       reader.readAsDataURL(file);
     }
 
-    function sanitizeExtractedRoute(result) {
-      if (!result || !result.paradas) return result;
-      
-      // 1. Limpiar bases (Torrejón de Velasco)
-      result.paradas.forEach((p, idx) => {
-        const loc = (p.localidad || '').toUpperCase().trim();
-        const action = (p.tipoAccion || '').toUpperCase().trim();
-        
-        if (loc.includes('TORREJON') || loc.includes('BASE') || loc.includes('NAVE') || action.includes('BASE')) {
-          p.expedientes = [];
-          p.kmTramo = 0;
-          if (idx === 0 || action.includes('SALIDA')) {
-            p.tipoAccion = 'SALIDA BASE';
-          } else {
-            p.tipoAccion = 'RETORNO BASE';
-          }
-        }
-      });
-
-      // 2. Extraer todos los expedientes de todas las paradas para recolocarlos con precisión quirúrgica
-      const allExpedientes = [];
-      result.paradas.forEach(p => {
-        if (p.expedientes && Array.isArray(p.expedientes)) {
-          allExpedientes.push(...p.expedientes);
-        }
-        p.expedientes = [];
-      });
-
-      // Evitar duplicados por número de albarán/expediente
-      const uniqueExpMap = new Map();
-      allExpedientes.forEach(exp => {
-        const key = (exp.expediente || '').trim() || Math.random().toString();
-        uniqueExpMap.set(key, exp);
-      });
-      const cleanExpedientes = Array.from(uniqueExpMap.values());
-
-      // 3. Asignar cada albarán a su ciudad correspondiente (Origen para Recogida, Destino para Entrega)
-      cleanExpedientes.forEach(exp => {
-        const origLoc = (exp.locOrigen || '').toUpperCase().trim();
-        const destLoc = (exp.locDestino || '').toUpperCase().trim();
-        const tipoExp = (exp.tipo || '').toUpperCase().trim(); 
-
-        const isRecogida = tipoExp.includes('RECOGIDA') || tipoExp.includes('R');
-        const targetLoc = isRecogida ? (origLoc || destLoc) : (destLoc || origLoc);
-        if (!targetLoc) return;
-
-        let paradaMatch = result.paradas.find(p => {
-          const pLoc = (p.localidad || '').toUpperCase().trim();
-          return pLoc && targetLoc && (targetLoc.includes(pLoc) || pLoc.includes(targetLoc));
-        });
-
-        if (!paradaMatch) {
-          paradaMatch = {
-            id: `p_auto_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
-            orden: result.paradas.length,
-            localidad: targetLoc,
-            tipoAccion: isRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)',
-            kmTramo: 50,
-            esOrigen: false,
-            esFin: false,
-            estado: 'pendiente',
-            expedientes: []
-          };
-          const retIndex = result.paradas.findIndex(p => (p.tipoAccion || '').includes('RETORNO'));
-          if (retIndex > 0) {
-            result.paradas.splice(retIndex, 0, paradaMatch);
-          } else {
-            result.paradas.push(paradaMatch);
-          }
-        }
-
-        paradaMatch.expedientes.push(exp);
-      });
-
-      result.paradas.forEach((p, i) => { p.orden = i; });
-
-      return result;
-    }
-
     async function processRouteImage(base64Image, mimeType) {
-      const prompt = `Actúa como extractor OCR supremo y perito de rutas para "Motos@Motos Trans S.L.".
-
-REGLAS ABSOLUTAS E INQUEBRANTABLES:
-1. PUNTOS BASE (TORREJÓN DE VELASCO): Las paradas de tipo "SALIDA BASE" o "RETORNO BASE" (Torrejón de Velasco) son únicamente los puntos de salida y llegada del camión de transporte. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su array "expedientes" debe estar vacío: []).
-2. DISTINCIÓN CRÍTICA RECOGIDA (R) VS ENTREGA (E): 
-   - Analiza la tabla inferior de expedientes y albaranes línea por línea.
-   - Si un albarán se recoge en una ciudad (ej: Valladolid con DCV Motor, o el intercambio con Javier), el tipo debe ser obligatoriamente "RECOGIDA" y su localidad asociada es el Origen.
-   - Si un albarán se entrega en una ciudad (ej: Valladolid con Javier, o Malpica, o Ferrol), el tipo debe ser obligatoriamente "ENTREGA" y su localidad asociada es el Destino.
-3. EXTRACCIÓN TOTAL: Extrae todas las paradas y asigna correctamente cada albarán a su parada correspondiente sin omitir datos ni teléfonos de contacto.
-
-Devuelve EXCLUSIVAMENTE este JSON válido:
+      const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
+Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario (secuencia de paradas con localidad, kmTramo, tipoAccion). 3. Expedientes (expediente, tipo, moto, clienteOrigen, telOrigen, locOrigen, clienteDestino, telDestino, locDestino, importe) mapeados a cada parada.
+Devuelve EXCLUSIVAMENTE este JSON:
 {
   "nombreRuta": "string", "conductor": "string", "dni": "string", "matricula": "string", "totalKm": 0, "gastosGasoil": "string", "fecha": "string", "avisoEspecial": "string",
   "paradas": [
@@ -2640,7 +2266,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
 }`;
 
       try {
-        const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+        const models = ['gemini-3.6-flash'];
         let response = null;
         let lastError = '';
 
@@ -2661,7 +2287,6 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
             } else {
               const errJson = await response.json().catch(() => ({}));
               lastError = `${model} [HTTP ${response.status}]: ${errJson?.error?.message || response.statusText}`;
-              if (response.status === 503) await new Promise(r => setTimeout(r, 1500));
             }
           } catch (e) {
             lastError = e.message;
@@ -2673,9 +2298,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
         const data = await response.json();
         let rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        let result = JSON.parse(rawText);
-
-        result = sanitizeExtractedRoute(result);
+        const result = JSON.parse(rawText);
 
         const newId = `ruta_${Date.now()}`;
         const nuevaRuta = {
@@ -2715,7 +2338,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
         safeClass('scan-loading', 'add', 'hidden');
         switchTab('rutas');
         updateAllUI();
-        showToast('✅ Ruta digitalizada correctamente (Modo Dios)');
+        showToast('✅ Ruta digitalizada e indexada');
       } catch (err) {
         safeClass('scan-loading', 'add', 'hidden');
         showToast(`❌ Error: ${err.message}`);
@@ -2754,7 +2377,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
           const thumb = await createThumbnail(fullDataUrl);
 
           safeText('scan-status-text', 'Extrayendo datos de albarán con IA...');
-          await processSingleAlbaranImage(base64, 'image/jpeg', targetRoute, fullDataUrl, thumb, file);
+          await processSingleAlbaranImage(base64, 'image/jpeg', targetRoute, fullDataUrl, thumb);
 
           safeDOM('single-albaran-camera').value = '';
           safeDOM('single-albaran-gallery').value = '';
@@ -2764,7 +2387,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
       reader.readAsDataURL(file);
     }
 
-    async function processSingleAlbaranImage(base64Image, mimeType, targetRoute, originalFullData, thumbnail, fileBlob) {
+    async function processSingleAlbaranImage(base64Image, mimeType, targetRoute, originalFullData, thumbnail) {
       const prompt = `Actúa como extractor OCR especializado para albaranes de transporte de "Motos@Motos Trans S.L.".
 Extrae los datos individuales de este albarán:
 - expediente (número de albarán, ej: F-1520, E-5576, etc.)
@@ -2791,7 +2414,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
 }`;
 
       try {
-        const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+        const models = ['gemini-3.6-flash'];
         let response = null;
         let lastError = '';
 
@@ -2812,7 +2435,6 @@ Devuelve EXCLUSIVAMENTE este JSON:
             } else {
               const errJson = await response.json().catch(() => ({}));
               lastError = `${model} [HTTP ${response.status}]: ${errJson?.error?.message || response.statusText}`;
-              if (response.status === 503) await new Promise(r => setTimeout(r, 1500));
             }
           } catch (e) {
             lastError = e.message;
@@ -2829,11 +2451,6 @@ Devuelve EXCLUSIVAMENTE este JSON:
         const esRecogida = (extracted.tipo || '').toUpperCase().includes('RECOGIDA');
         const localidadObjetivo = (esRecogida ? extracted.locOrigen : extracted.locDestino) || extracted.locDestino || extracted.locOrigen || 'Nueva Parada';
         const tipoAccionStr = esRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)';
-
-        let cloudUrl = null;
-        try {
-          if (fileBlob) cloudUrl = await uploadPhotoToSupabase(fileBlob, fileBlob.name);
-        } catch (_) {}
 
         const nuevoExpediente = {
           expediente: extracted.expediente || `ALB-${Date.now().toString().slice(-4)}`,
@@ -2853,7 +2470,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
           pagadoBizum: false,
           horaPrevista: '10:00',
           observaciones: extracted.observaciones || '',
-          fotoAlbaran: cloudUrl || originalFullData,
+          fotoAlbaran: originalFullData,
           fotoAlbaranThumb: thumbnail,
           fotoAlbaranFecha: new Date().toLocaleString('es-ES'),
           fotosInspeccion: []
@@ -3162,14 +2779,8 @@ Devuelve EXCLUSIVAMENTE este JSON:
       if (!val) return;
       userApiKey = val;
       await dbSetConfig('userApiKey', userApiKey);
-      localStorage.setItem('motos_gemini_api_key', userApiKey);
-      try {
-        await supabaseClient.from('app_config').upsert({ key: 'gemini_api_key', value: userApiKey });
-      } catch (err) {
-        console.warn('Error guardando clave en cloud:', err);
-      }
       checkApiKeyWarning();
-      showToast('✅ Clave sincronizada en todos tus dispositivos');
+      showToast('✅ Clave guardada');
     }
 
     function showToast(text) {
@@ -3216,28 +2827,22 @@ Devuelve EXCLUSIVAMENTE este JSON:
     function makePeritajePhotoId(){ return 'P_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
     async function compressPeritajeImage(file) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve,reject)=>{
         const reader = new FileReader();
         reader.onload = () => {
-          if (file.size < 8 * 1024 * 1024) {
-            resolve(reader.result);
-            return;
-          }
           const img = new Image();
           img.onload = () => {
-            const max = 4000;
-            const scale = Math.min(1, max / Math.max(img.width, img.height));
+            const max = 2200;
+            const scale = Math.min(1, max / Math.max(img.width,img.height));
             const c = document.createElement('canvas');
-            c.width = Math.max(1, Math.round(img.width * scale));
-            c.height = Math.max(1, Math.round(img.height * scale));
-            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-            resolve(c.toDataURL('image/jpeg', 0.98));
+            c.width = Math.max(1,Math.round(img.width*scale));
+            c.height = Math.max(1,Math.round(img.height*scale));
+            c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+            resolve(c.toDataURL('image/jpeg',0.88));
           };
-          img.onerror = reject;
-          img.src = reader.result;
+          img.onerror=reject; img.src=reader.result;
         };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+        reader.onerror=reject; reader.readAsDataURL(file);
       });
     }
 
@@ -3246,32 +2851,18 @@ Devuelve EXCLUSIVAMENTE este JSON:
       if (!e) return showToast('Abre primero un expediente');
       e.peritaje = e.peritaje || {photos:[],notes:'',score:null};
       const files = [...(event.target.files||[])];
-      showToast('Cargando y subiendo fotos a Supabase Cloud...');
       for (const file of files) {
         if(!file.type.startsWith('image/')) continue;
-        const localDataUrl = await compressPeritajeImage(file);
-        
-        let cloudUrl = null;
-        try {
-          cloudUrl = await uploadPhotoToSupabase(file, file.name);
-        } catch (_) {}
-
+        const dataUrl = await compressPeritajeImage(file);
         e.peritaje.photos.push({
-          id: makePeritajePhotoId(),
-          name: file.name,
-          dataUrl: cloudUrl || localDataUrl,
-          damages: [],
-          score: null,
-          summary: 'Pendiente de análisis',
-          status: 'pending',
-          ts: Date.now()
+          id:makePeritajePhotoId(), name:file.name, dataUrl, damages:[], score:null, summary:'Pendiente de análisis', status:'pending', ts:Date.now()
         });
       }
       await persistRoute(routes.find(x=>x.id===peritajeContext.routeId));
       event.target.value='';
       peritajeContext.photoIdx = Math.max(0,e.peritaje.photos.length-1);
       renderPeritaje();
-      showToast(`✅ ${files.length} foto(s) sincronizadas en HD`);
+      showToast(`${files.length} foto(s) añadida(s)`);
     }
 
     function perSeverityClass(s){
@@ -3290,7 +2881,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
       const pc=safeDOM('peritaje-photos');
       if(pc) pc.innerHTML=photos.map((p,i)=>`
         <div class="per-photo-card ${i===peritajeContext.photoIdx?'active':''}" onclick="selectPeritajePhoto(${i})">
-          <img src="${p.dataUrl}" crossorigin="anonymous" class="per-photo-thumb" alt="">
+          <img src="${p.dataUrl}" class="per-photo-thumb" alt="">
           <div class="px-2 py-1.5 flex items-center justify-between gap-1">
             <span class="text-[8px] text-slate-400 truncate">${p.name||'Foto '+(i+1)}</span>
             <span class="text-[8px] font-black ${p.status==='done'?'text-[#00E676]':'text-[#FF007F]'}">${p.status==='done'?'✓':'•'}</span>
@@ -3324,6 +2915,46 @@ Devuelve EXCLUSIVAMENTE este JSON:
       return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
+    function buildPeritajePdfHtml(exp, compact=false){
+      const per=exp?.peritaje||{};
+      const photos=Array.isArray(per.photos)?per.photos:[];
+      const damages=photos.flatMap((p,pi)=>(Array.isArray(p.damages)?p.damages:[]).map(d=>({...d,_photo:p.name||('Foto '+(pi+1))})));
+      const scores=photos.map(p=>p.score).filter(x=>typeof x==='number');
+      const score=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+      const severe=damages.filter(d=>(d.severity||'').toLowerCase().includes('grave')).length;
+      const esc=v=>escapeHtmlSafe(v||'—');
+      const scoreColor=score===null?'#64748B':(score>=90?'#00E676':score>=70?'#F59E0B':'#FF007F');
+      const status=photos.length?(photos.some(p=>p.status==='done')?'ANALIZADO':'PENDIENTE'):'SIN FOTOS';
+
+      if(compact){
+        const damageRows=damages.length?damages.slice(0,12).map((d,i)=>`
+          <div style="display:grid;grid-template-columns:24px 1.5fr 1.2fr .7fr;gap:5px;padding:3px 0;border-top:1px solid #1C263E;font-size:7.5px;align-items:center;">
+            <b style="color:#00E676;">${i+1}</b><span style="color:#F8FAFC;font-weight:700;">${esc(d.type)}</span><span style="color:#94A3B8;">${esc(d.location)}</span><span style="color:${perSeverityClass(d.severity)==='grave'?'#FF007F':perSeverityClass(d.severity)==='moderado'?'#F59E0B':'#00E676'};font-weight:800;">${esc(d.severity)}</span>
+          </div>`).join(''):`<div style="font-size:7.5px;color:#00E676;padding:4px 0;">✓ Sin daños confirmados por peritaje IA.</div>`;
+        return `<div style="margin-top:5px;background:#090E1A;border:1px solid #1C263E;border-radius:6px;padding:6px 8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <span style="font-size:8px;font-weight:900;color:#00E676;text-transform:uppercase;">🛡️ PERITAJE IA</span>
+            <span style="font-size:7px;font-weight:900;color:${scoreColor};">${score===null?'Score —':'Score '+score+'/100'} · ${status}</span>
+          </div>
+          ${damageRows}
+        </div>`;
+      }
+
+      const photoGrid=photos.slice(0,8).map((p,i)=>`<div style="background:#070A12;border:1px solid #1C263E;border-radius:5px;overflow:hidden;">
+        <img src="${p.dataUrl||''}" style="width:100%;height:88px;object-fit:cover;display:block;">
+        <div style="font-size:6.5px;color:#94A3B8;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.name||('Foto '+(i+1)))}</div>
+      </div>`).join('');
+      const damageCards=damages.length?damages.map((d,i)=>`<div style="background:#070A12;border:1px solid #1C263E;border-radius:5px;padding:5px 7px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:8px;font-weight:900;color:#F8FAFC;">${i+1}. ${esc(d.type)}</span><span style="font-size:7px;font-weight:900;color:${perSeverityClass(d.severity)==='grave'?'#FF007F':'#00E676'};">${esc(d.severity)}</span></div>
+        <div style="font-size:7px;color:#94A3B8;margin-top:2px;">${esc(d.location)}</div>
+      </div>`).join(''):`<div style="font-size:8px;color:#00E676;padding:6px 0;">✓ Sin daños en fotos analizadas.</div>`;
+      return `<div style="background:#0E1526;border:1px solid #1C263E;border-radius:8px;padding:10px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1C263E;padding-bottom:4px;margin-bottom:6px;"><span style="font-size:8.5px;font-weight:900;text-transform:uppercase;color:#00E676;">🛡️ PERITAJE IA DE LA MOTO</span><span style="font-size:8px;font-weight:900;color:${scoreColor};">${score===null?'Score —':'Score '+score+'/100'}</span></div>
+        ${damageCards}
+        ${photos.length?`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px;">${photoGrid}</div>`:''}
+      </div>`;
+    }
+
     function selectPeritajePhoto(i){ peritajeContext.photoIdx=i; renderPeritaje(); }
     function renderPeritajeStage(){
       const {e}=getPeritajeExp(); const p=e?.peritaje?.photos?.[peritajeContext.photoIdx];
@@ -3331,7 +2962,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
       safeClass('peritaje-stage','remove','hidden');
       safeText('peritaje-stage-title',p.name||'Foto');
       safeText('peritaje-stage-count',(p.damages?.length||0)+' daños');
-      const img=safeDOM('peritaje-main-img'); if(img) { img.crossOrigin = "anonymous"; img.src=p.dataUrl; }
+      const img=safeDOM('peritaje-main-img'); if(img) img.src=p.dataUrl;
       const boxes=safeDOM('peritaje-boxes'); if(!boxes) return;
       boxes.innerHTML='';
       (p.damages||[]).forEach((d,i)=>{
@@ -3346,27 +2977,15 @@ Devuelve EXCLUSIVAMENTE este JSON:
       });
     }
 
-    async function dataUrlParts(urlOrDataUrl){
-      if (String(urlOrDataUrl).startsWith('data:')) {
-        const m = String(urlOrDataUrl).match(/^data:([^;]+);base64,(.*)$/);
-        return m ? { mime: m[1], data: m[2] } : { mime: 'image/jpeg', data: '' };
-      }
-      const res = await fetch(urlOrDataUrl);
-      const blob = await res.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const m = reader.result.match(/^data:([^;]+);base64,(.*)$/);
-          resolve(m ? { mime: m[1], data: m[2] } : { mime: 'image/jpeg', data: '' });
-        };
-        reader.readAsDataURL(blob);
-      });
+    function dataUrlParts(dataUrl){
+      const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.*)$/);
+      return m?{mime:m[1],data:m[2]}:{mime:'image/jpeg',data:''};
     }
 
     async function analyzeOnePeritaje(photo){
       if(!userApiKey) throw new Error('Configura primero la clave Gemini en Ajustes.');
       photo.status='analyzing'; renderPeritaje();
-      const {mime,data} = await dataUrlParts(photo.dataUrl);
+      const {mime,data}=dataUrlParts(photo.dataUrl);
 
       const basePrompt=`Eres un perito profesional de motocicletas especializado en detección visual de daños.
 MODO: INSPECCIÓN EXHAUSTIVA DE SUPERFICIE. Revisa TODA la superficie visible de TODAS las piezas en la foto.
@@ -3390,7 +3009,8 @@ Devuelve EXCLUSIVAMENTE JSON válido:
 }
 Si no hay daños: score 100 y damages [].`;
 
-      const models=['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+      // Lista con alternativas si 3.6 o 3.8 tienen sobrecarga (503)
+      const models=['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
       let last='';
 
       async function askModel(model, prompt){
@@ -3407,7 +3027,7 @@ Si no hay daños: score 100 y damages [].`;
         }
         const j=JSON.parse(raw);
         const txt=j?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'';
-        return JSON.parse(txt.replace(/```json/gi,'').replace(/```/g, '').trim());
+        return JSON.parse(txt.replace(/```json/gi,'').replace(/```/g,'').trim());
       }
 
       for(const model of models){
@@ -3423,9 +3043,8 @@ Si no hay daños: score 100 y damages [].`;
           return;
         }catch(err){
           last=err.message||String(err);
-          if(String(err).includes('503')) {
-            await new Promise(r => setTimeout(r, 1500));
-          }
+          // Si da saturación (503), espera 1.5s y prueba el siguiente de la lista
+          await new Promise(r => setTimeout(r, 1500));
         }
       }
       photo.status='error'; photo.summary='Error de análisis: '+last; showToast('❌ '+last);
@@ -3463,7 +3082,7 @@ Si no hay daños: score 100 y damages [].`;
       e.peritaje=e.peritaje||{photos:[]};
       e.peritaje.notes=safeDOM('peritaje-notes')?.value||'';
       await persistRoute(r);
-      showToast('Observaciones sincronizadas en la nube');
+      showToast('Observaciones guardadas');
     }
   </script>
 
