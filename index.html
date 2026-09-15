@@ -788,7 +788,6 @@
         if (error) throw error;
         if (data && data.length > 0) {
           const cloudRoutes = data.map(d => d.data);
-          // Actualizar caché local
           for (const r of cloudRoutes) await localSaveRoute(r);
           updateCloudStatus(true);
           return cloudRoutes;
@@ -826,7 +825,6 @@
       }
     }
 
-    // Métodos locales IndexedDB
     function localGetAllRoutes() {
       return new Promise((resolve) => {
         const tx = dbInstance.transaction('routes', 'readonly');
@@ -884,10 +882,9 @@
       }
     }
 
-    // SUBIDA NATIVA A SUPABASE STORAGE BUCKET 'fotos'
     async function uploadPhotoToSupabase(fileBlob, fileName) {
       try {
-        const path = `peritajes/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '')}`;
+        const path = `peritajes/${Date.now]}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '')}`;
         const { data, error } = await supabaseClient.storage.from('fotos').upload(path, fileBlob, {
           cacheControl: '3600',
           upsert: true
@@ -901,7 +898,6 @@
       }
     }
 
-    // Escucha de cambios en tiempo real entre móviles, tablets y PCs
     function setupRealtimeListener() {
       supabaseClient
         .channel('rutas_channel')
@@ -966,7 +962,18 @@
     window.addEventListener('DOMContentLoaded', async () => {
       await initDB();
       activeRouteId = await dbGetConfig('activeRouteId');
-      userApiKey = (await dbGetConfig('userApiKey')) || localStorage.getItem('motos_gemini_api_key') || '';
+      
+      // Cargar API Key desde Supabase Cloud o local
+      try {
+        const { data } = await supabaseClient.from('app_config').select('value').eq('key', 'gemini_api_key').single();
+        if (data && data.value) {
+          userApiKey = data.value;
+        }
+      } catch (_) {}
+
+      if (!userApiKey) {
+        userApiKey = (await dbGetConfig('userApiKey')) || localStorage.getItem('motos_gemini_api_key') || '';
+      }
 
       routes = await dbGetAllRoutes();
       if (!activeRouteId && routes.length > 0) activeRouteId = routes[0].id;
@@ -1583,7 +1590,6 @@
         const targetRoute = routes.find(r => r.id === routeId);
         const exp = targetRoute.paradas.find(p => p.id === stopId).expedientes[expIdx];
 
-        // Subir a Supabase Storage
         let cloudUrl = null;
         try {
           cloudUrl = await uploadPhotoToSupabase(file, file.name);
@@ -2131,7 +2137,6 @@
       }, 200);
     }
 
-    // EXPORTACIÓN PDF DE PERITAJE EN PÁGINAS INDEPENDIENTES HD (SIN CORTES)
     async function exportPeritajeHD_PDF() {
       const { r, s, e } = getPeritajeExp();
       if (!e) return showToast('Selecciona primero un expediente');
@@ -2501,7 +2506,7 @@
     }
 
     async function processRouteImage(base64Image, mimeType) {
-        const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
+      const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
 
 REGLAS OBLIGATORIAS DE ASIGNACIÓN:
 1. PUNTOS BASE: Las paradas con tipoAccion "SALIDA BASE" o "RETORNO BASE" (nave / Torrejón de Velasco) son únicamente puntos de salida o llegada del camión. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su lista "expedientes" debe ser siempre un array vacío: []).
@@ -2711,7 +2716,6 @@ Devuelve EXCLUSIVAMENTE este JSON:
         const localidadObjetivo = (esRecogida ? extracted.locOrigen : extracted.locDestino) || extracted.locDestino || extracted.locOrigen || 'Nueva Parada';
         const tipoAccionStr = esRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)';
 
-        // Subir a Supabase Storage
         let cloudUrl = null;
         try {
           if (fileBlob) cloudUrl = await uploadPhotoToSupabase(fileBlob, fileBlob.name);
@@ -3044,8 +3048,14 @@ Devuelve EXCLUSIVAMENTE este JSON:
       if (!val) return;
       userApiKey = val;
       await dbSetConfig('userApiKey', userApiKey);
+      localStorage.setItem('motos_gemini_api_key', userApiKey);
+      try {
+        await supabaseClient.from('app_config').upsert({ key: 'gemini_api_key', value: userApiKey });
+      } catch (err) {
+        console.warn('Error guardando clave en cloud:', err);
+      }
       checkApiKeyWarning();
-      showToast('✅ Clave guardada');
+      showToast('✅ Clave sincronizada en todos tus dispositivos');
     }
 
     function showToast(text) {
@@ -3227,7 +3237,6 @@ Devuelve EXCLUSIVAMENTE este JSON:
         const m = String(urlOrDataUrl).match(/^data:([^;]+);base64,(.*)$/);
         return m ? { mime: m[1], data: m[2] } : { mime: 'image/jpeg', data: '' };
       }
-      // Si es una URL remota de Supabase, la descargamos como base64 para enviarla a Gemini
       const res = await fetch(urlOrDataUrl);
       const blob = await res.blob();
       return new Promise((resolve) => {
