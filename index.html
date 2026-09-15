@@ -980,32 +980,22 @@
       const apiInput = safeDOM('api-key-input');
       if (apiInput) apiInput.value = userApiKey;
 
-      // Inicializar eventos de inputs file
-      const camInput = safeDOM('camera-input');
-      const galInput = safeDOM('gallery-input');
-      if (camInput) camInput.onchange = (e) => handleFileSelected(e);
-      if (galInput) galInput.onchange = (e) => handleFileSelected(e);
+      // Vincular listeners de archivos de forma robusta
+      const bindFileEvent = (id, cb) => {
+        const el = safeDOM(id);
+        if (el) el.onchange = cb;
+      };
 
-      const sCam = safeDOM('single-albaran-camera');
-      const sGal = safeDOM('single-albaran-gallery');
-      if (sCam) sCam.onchange = (e) => handleSingleAlbaranSelected(e);
-      if (sGal) sGal.onchange = (e) => handleSingleAlbaranSelected(e);
-
-      const albCam = safeDOM('albaran-camera-input');
-      const albGal = safeDOM('albaran-gallery-input');
-      if (albCam) albCam.onchange = (e) => processCapture(e, 'albaran');
-      if (albGal) albGal.onchange = (e) => processCapture(e, 'albaran');
-
-      const inspCam = safeDOM('inspection-camera-input');
-      const inspGal = safeDOM('inspection-gallery-input');
-      if (inspCam) inspCam.onchange = (e) => processCapture(e, 'inspection');
-      if (inspGal) inspGal.onchange = (e) => processCapture(e, 'inspection');
-
-      const restInput = safeDOM('restore-backup-input');
-      if (restInput) restInput.onchange = (e) => handleRestoreBackup(e);
-
-      const perPhoto = safeDOM('peritaje-photo-input');
-      if (perPhoto) perPhoto.onchange = (e) => handlePeritajeFiles(e);
+      bindFileEvent('camera-input', handleFileSelected);
+      bindFileEvent('gallery-input', handleFileSelected);
+      bindFileEvent('single-albaran-camera', handleSingleAlbaranSelected);
+      bindFileEvent('single-albaran-gallery', handleSingleAlbaranSelected);
+      bindFileEvent('albaran-camera-input', (e) => processCapture(e, 'albaran'));
+      bindFileEvent('albaran-gallery-input', (e) => processCapture(e, 'albaran'));
+      bindFileEvent('inspection-camera-input', (e) => processCapture(e, 'inspection'));
+      bindFileEvent('inspection-gallery-input', (e) => processCapture(e, 'inspection'));
+      bindFileEvent('restore-backup-input', handleRestoreBackup);
+      bindFileEvent('peritaje-photo-input', handlePeritajeFiles);
 
       checkApiKeyWarning();
       switchTab(routes.length > 0 ? 'rutas' : 'nueva');
@@ -1196,7 +1186,7 @@
           const tieneIncidencia = p.estado === 'incidencia';
           const esRecogida = p.tipoAccion && p.tipoAccion.includes('(R)');
           const esEntrega = p.tipoAccion && p.tipoAccion.includes('(E)');
-          const esBase = p.esOrigen || p.esFin;
+          const esBase = p.esOrigen || p.esFin || (p.tipoAccion && p.tipoAccion.includes('BASE'));
           const tiempoTramo = p.kmTramo > 0 ? calcularTiempoEstimado(p.kmTramo) : null;
 
           let nodeBg = 'bg-[#1C263E] text-slate-300 border-slate-600';
@@ -2542,17 +2532,77 @@
       reader.readAsDataURL(file);
     }
 
+    function sanitizeExtractedRoute(result) {
+      if (!result || !result.paradas) return result;
+      
+      // 1. Forzar que las bases nunca tengan motos asignadas y sus nombres sean limpios
+      result.paradas.forEach((p, idx) => {
+        const loc = (p.localidad || '').toUpperCase().trim();
+        const action = (p.tipoAccion || '').toUpperCase().trim();
+        
+        if (loc.includes('TORREJON') || loc.includes('BASE') || loc.includes('NAVE') || action.includes('BASE')) {
+          p.expedientes = [];
+          if (idx === 0 || action.includes('SALIDA')) {
+            p.tipoAccion = 'SALIDA BASE';
+          } else {
+            p.tipoAccion = 'RETORNO BASE';
+          }
+        }
+      });
+
+      // 2. Redistribuir expedientes a sus paradas reales según origen/destino
+      const allExpedientes = [];
+      result.paradas.forEach(p => {
+        if (p.expedientes) {
+          allExpedientes.push(...p.expedientes);
+        }
+        p.expedientes = [];
+      });
+
+      allExpedientes.forEach(exp => {
+        const origLoc = (exp.locOrigen || '').toUpperCase().trim();
+        const destLoc = (exp.locDestino || '').toUpperCase().trim();
+        const tipoExp = (exp.tipo || '').toUpperCase().trim(); // RECOGIDA o ENTREGA
+
+        // Determinar en qué parada debe estar según sea Recogida (origen) o Entrega (destino)
+        let targetLoc = tipoExp.includes('RECOGIDA') ? origLoc : destLoc;
+        if (!targetLoc) targetLoc = destLoc || origLoc;
+
+        // Buscar parada existente que coincida con la localidad
+        let paradaMatch = result.paradas.find(p => {
+          const pLoc = (p.localidad || '').toUpperCase().trim();
+          return targetLoc.includes(pLoc) || pLoc.includes(targetLoc);
+        });
+
+        if (paradaMatch) {
+          paradaMatch.expedientes.push(exp);
+        } else {
+          // Si no existe la parada exacta en el itinerario superior, crearla o añadirla a la primera parada intermedia
+          let stopToUse = result.paradas.find(p => !((p.tipoAccion || '').toUpperCase().includes('BASE')));
+          if (!stopToUse && result.paradas.length > 1) stopToUse = result.paradas[1];
+          if (stopToUse) {
+            stopToUse.expedientes.push(exp);
+          } else if (result.paradas.length > 0) {
+            result.paradas[0].expedientes.push(exp);
+          }
+        }
+      });
+
+      return result;
+    }
+
     async function processRouteImage(base64Image, mimeType) {
-      const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
+      const prompt = `Actúa como extractor OCR supremo y perito de rutas para "Motos@Motos Trans S.L.".
 
-REGLAS OBLIGATORIAS DE EXTRACCIÓN Y ASIGNACIÓN:
-1. EXTRACCIÓN COMPLETA: Revisa toda la hoja física. Debes extraer ABSOLUTAMENTE TODAS las paradas indicadas, ya sean entregas o RECOGIDAS (incluyendo ciudades como Valladolid, Burgos, etc., si aparecen en el itinerario o albaranes). No omitas ninguna parada de la secuencia.
-2. PUNTOS BASE: Las paradas con tipoAccion "SALIDA BASE" o "RETORNO BASE" (nave / Torrejón de Velasco) son únicamente puntos de salida o llegada del camión. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su lista "expedientes" debe ser siempre un array vacío: []).
-3. ASIGNACIÓN POR LOCALIDAD: Cada albarán/expediente de recogida (R) o entrega (E) debe asignarse EXCLUSIVAMENTE a la parada intermedia correspondiente a su localidad según el trayecto indicado.
+REGLAS ABSOLUTAS E INQUEBRANTABLES:
+1. PUNTOS BASE (TORREJÓN DE VELASCO): Las paradas de tipo "SALIDA BASE" o "RETORNO BASE" (Torrejón de Velasco) son únicamente los puntos de salida y llegada del camión de transporte. Tienen terminantemente PROHIBIDO llevar expedientes o motos (su array "expedientes" debe estar vacío: []).
+2. DISTINCIÓN RECOGIDA (R) VS ENTREGA (E): 
+   - Analiza la tabla inferior de expedientes y albaranes.
+   - Las recogidas ocurren en el origen del albarán (ej: DCV Motor en Valladolid es una RECOGIDA, tipo R).
+   - Las entregas ocurren en el destino del albarán (ej: Malpica, Ferrol, etc., son ENTREGAS, tipo E).
+3. EXTRACCIÓN TOTAL: Extrae todas las paradas del itinerario superior y asigna correctamente cada albarán a su parada correspondiente sin omitir datos ni contactos.
 
-Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario completo (secuencia de todas las paradas con localidad, kmTramo, tipoAccion). 3. Expedientes vinculados a sus paradas correctas.
-
-Devuelve EXCLUSIVAMENTE este JSON:
+Devuelve EXCLUSIVAMENTE este JSON válido:
 {
   "nombreRuta": "string", "conductor": "string", "dni": "string", "matricula": "string", "totalKm": 0, "gastosGasoil": "string", "fecha": "string", "avisoEspecial": "string",
   "paradas": [
@@ -2599,7 +2649,10 @@ Devuelve EXCLUSIVAMENTE este JSON:
         const data = await response.json();
         let rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const result = JSON.parse(rawText);
+        let result = JSON.parse(rawText);
+
+        // Aplicar saneamiento automático Modo Dios
+        result = sanitizeExtractedRoute(result);
 
         const newId = `ruta_${Date.now()}`;
         const nuevaRuta = {
@@ -2639,7 +2692,7 @@ Devuelve EXCLUSIVAMENTE este JSON:
         safeClass('scan-loading', 'add', 'hidden');
         switchTab('rutas');
         updateAllUI();
-        showToast('✅ Ruta digitalizada y sincronizada en la nube');
+        showToast('✅ Ruta digitalizada correctamente (Modo Dios)');
       } catch (err) {
         safeClass('scan-loading', 'add', 'hidden');
         showToast(`❌ Error: ${err.message}`);
@@ -3331,7 +3384,7 @@ Si no hay daños: score 100 y damages [].`;
         }
         const j=JSON.parse(raw);
         const txt=j?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'';
-        return JSON.parse(txt.replace(/```json/gi,'').replace(/```/g,'').trim());
+        return JSON.parse(txt.replace(/```json/gi,'').replace(/```/g, '').trim());
       }
 
       for(const model of models){
