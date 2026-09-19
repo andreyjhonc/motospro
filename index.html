@@ -51,20 +51,47 @@
       box-sizing: border-box;
     }
 
-    .timeline-container { position: relative; }
-    .timeline-item { position: relative; padding-left: 2.2rem; }
+    .timeline-container { position: relative; padding-left: 0.15rem; }
+    .timeline-item { position: relative; padding-left: 2.35rem; margin-bottom: 0.45rem; }
     .timeline-item::before {
       content: '';
       position: absolute;
-      left: 0.95rem;
-      top: 1.5rem;
-      bottom: -1rem;
+      left: 0.92rem;
+      top: 1.65rem;
+      bottom: -0.55rem;
       width: 2px;
-      background: linear-gradient(180deg, rgba(0, 230, 118, 0.6) 0%, rgba(255, 0, 127, 0.4) 100%);
+      background: #FF007F;
+      opacity: 0.55;
       z-index: 1;
     }
     .timeline-item:last-child::before { display: none; }
-    .timeline-node { position: absolute; left: 0.25rem; top: 0.75rem; z-index: 2; }
+    .timeline-node {
+      position: absolute; left: 0.2rem; top: 0.7rem; z-index: 2;
+      width: 1.65rem; height: 1.65rem;
+      border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900;
+      border: 2px solid transparent;
+      box-shadow: 0 0 10px rgba(255, 0, 127, 0.35);
+    }
+    .timeline-node.is-base {
+      background: #38BDF8; color: #0B1220; border-color: #7DD3FC;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+    }
+    .timeline-node.is-stop {
+      background: #FF007F; color: #fff; border-color: #FF4DA6;
+    }
+    .timeline-node.is-done {
+      background: #00E676; color: #070A12; border-color: #5CFFA8;
+      box-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
+    }
+    .timeline-card {
+      background: #0B1220;
+      border: 1px solid #1C263E;
+      border-radius: 1rem;
+      transition: border-color .15s ease;
+    }
+    .timeline-card:active { border-color: #FF007F66; }
 
     .glow-green { box-shadow: 0 0 15px var(--neon-green-glow); }
     .glow-pink { box-shadow: 0 0 15px var(--neon-pink-glow); }
@@ -153,7 +180,116 @@
       button,input,select,textarea{min-height:42px}
       .per-photo-card button{min-height:0}
     }
-  </style>
+  
+/* ===== MOTOSPRO THEME SYSTEM v2 ===== */
+:root {
+  --theme-primary: #FF6A00;
+  --theme-bg: #0A0A0B;
+  --theme-card: #161616;
+  --theme-card-inner: #0F0F0F;
+  --theme-border: rgba(255,255,255,0.08);
+  --theme-text: #ffffff;
+  --theme-text-dim: #9ca3af;
+}
+[data-theme="orange"] {
+  --theme-primary: #FF6A00;
+  --theme-bg: #0A0A0B;
+  --theme-card: #161616;
+  --theme-card-inner: #0F0F0F;
+  --theme-border: rgba(255,255,255,0.08);
+  --theme-success: #22c55e;
+  --theme-accent: #FF6A00;
+}
+[data-theme="neon"] {
+  --theme-primary: #00E676;
+  --theme-bg: #070A12;
+  --theme-card: #0E1526;
+  --theme-card-inner: #090E1A;
+  --theme-border: #1C263E;
+  --theme-success: #00E676;
+  --theme-accent: #FF007F;
+}
+[data-theme="light"] {
+  --theme-primary: #0A0A0B;
+  --theme-bg: #F8FAFC;
+  --theme-card: #FFFFFF;
+  --theme-card-inner: #F1F5F9;
+  --theme-border: #E2E8F0;
+  --theme-text: #0f172a;
+  --theme-text-dim: #64748b;
+  --theme-success: #16a34a;
+  --theme-accent: #FF6A00;
+}
+[data-theme="blue"] {
+  --theme-primary: #1E40FF;
+  --theme-bg: #080D1A;
+  --theme-card: #0E1526;
+  --theme-card-inner: #0A122A;
+  --theme-border: rgba(30,64,255,0.25);
+  --theme-success: #38BDF8;
+  --theme-accent: #1E40FF;
+}
+[data-theme="military"] {
+  --theme-primary: #8B9A6B;
+  --theme-bg: #111410;
+  --theme-card: #1A1F18;
+  --theme-card-inner: #151A14;
+  --theme-border: rgba(139,154,107,0.25);
+  --theme-success: #8B9A6B;
+  --theme-accent: #C4B08B;
+}
+
+body { background: var(--theme-bg) !important; transition: background 0.3s ease; }
+.app-shell { background: var(--theme-bg) !important; }
+.bg-\[\#0E1526\] { background: var(--theme-card) !important; border-color: var(--theme-border) !important; }
+.bg-\[\#090E1A\] { background: var(--theme-card-inner) !important; }
+.border-\[\#1C263E\] { border-color: var(--theme-border) !important; }
+.text-white { color: var(--theme-text) !important; }
+.text-slate-400, .text-slate-300 { color: var(--theme-text-dim) !important; }
+
+/* Theme cards */
+.theme-card { cursor:pointer; border-radius:20px; padding:14px; border:2px solid transparent; transition: all 0.2s; position:relative; overflow:hidden; }
+.theme-card.active { border-color: var(--theme-primary); box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+.theme-card .check { position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:var(--theme-primary); color:black; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px; opacity:0; transform:scale(0.5); transition:all 0.2s; }
+.theme-card.active .check { opacity:1; transform:scale(1); }
+
+[data-theme="light"] .app-shell { box-shadow: 0 20px 60px rgba(0,0,0,0.08) !important; }
+[data-theme="light"] header { background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(20px); }
+[data-theme="light"] nav { background: rgba(255,255,255,0.9) !important; }
+
+
+/* ===== TRUCK OS FINAL A - Premium Enhancements ===== */
+[data-theme="orange"] .app-shell {
+  background: radial-gradient(1000px 500px at 50% -10%, rgba(255,106,0,0.14), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(255,255,255,0.04), transparent 50%), #0A0A0B !important;
+}
+[data-theme="orange"] .bg-\[\#0E1526\] {
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+[data-theme="orange"] .btn-primary, [data-theme="orange"] button.bg-\[\#00E676\] {
+  background: #FF6A00 !important;
+  color: black !important;
+  border-radius: 9999px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em;
+  box-shadow: 0 8px 24px rgba(255,106,0,0.35) !important;
+}
+[data-theme="orange"] .timeline-item::before { background: linear-gradient(to bottom, #FF6A00, rgba(255,106,0,0.2)) !important; }
+[data-theme="orange"] .timeline-node.is-stop { background:#FF6A00 !important; color:black !important; border-color:#FF8A33 !important; box-shadow:0 0 16px rgba(255,106,0,0.5) !important; }
+[data-theme="orange"] #home-route-progress, [data-theme="orange"] .text-\[\#FF007F\] { color:#FF6A00 !important; }
+[data-theme="orange"] .text-\[\#00E676\] { color:#FF6A00 !important; }
+[data-theme="orange"] .glow-green { box-shadow: 0 0 20px rgba(255,106,0,0.3) !important; }
+[data-theme="orange"] .glow-pink { box-shadow: 0 0 20px rgba(255,106,0,0.35) !important; }
+/* Map header simulation */
+.truck-map-header { height: 140px; border-radius: 20px; overflow: hidden; position: relative; background: #111; border:1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
+.truck-map-grid { position:absolute; inset:0; background: linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px); background-size:32px 32px; mask-image: radial-gradient(ellipse at center, black 50%, transparent 85%); }
+.truck-map-line { position:absolute; top:50%; left:10%; right:15%; height:3px; background: linear-gradient(90deg, #FF6A00, #FF6A00 60%, transparent); border-radius:2px; }
+.truck-map-dot { position:absolute; width:10px; height:10px; border-radius:50%; background:#FF6A00; box-shadow:0 0 12px #FF6A00; top:50%; transform: translate(-50%, -50%); }
+
+</style>
   <link rel="manifest" href="manifest.json">
 </head>
 <body class="text-slate-100 flex flex-col min-h-screen select-none">
@@ -175,32 +311,84 @@
     </header>
 
     <!-- NAVBAR SUPERIOR -->
-    <nav class="sticky top-0 bg-[#070A12]/95 backdrop-blur-md border-b border-[#1C263E] px-1.5 py-1.5 flex justify-around items-center z-40 shrink-0">
-      <button onclick="switchTab('inicio')" id="nav-inicio" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">🏠</span>
-        <span class="text-[10px] font-bold mt-0.5">Inicio</span>
-      </button>
-      <button onclick="switchTab('rutas')" id="nav-rutas" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">🗺️</span>
-        <span class="text-[10px] font-bold mt-0.5">Rutas</span>
-      </button>
-      <button onclick="switchTab('nueva')" id="nav-nueva" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">📷</span>
-        <span class="text-[10px] font-bold mt-0.5">Añadir</span>
-      </button>
-      <button onclick="switchTab('buscar')" id="nav-buscar" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">🔍</span>
-        <span class="text-[10px] font-bold mt-0.5">Buscar</span>
-      </button>
-      <button onclick="switchTab('peritaje')" id="nav-peritaje" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">🛡️</span>
-        <span class="text-[10px] font-bold mt-0.5">Peritaje</span>
-      </button>
-      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-btn flex flex-col items-center py-1 px-2 rounded-xl text-slate-500">
-        <span class="text-lg">⚙️</span>
-        <span class="text-[10px] font-bold mt-0.5">Ajustes</span>
-      </button>
+    
+    <!-- TOP NAV PREMIUM + LEFT SIDEBAR -->
+    <style>
+      .top-nav-pro { position: sticky; top: 0; z-index: 40; background: rgba(10,10,11,0.88); backdrop-filter: blur(20px) saturate(1.5); border-bottom: 1px solid var(--theme-border); }
+      .nav-pill { position: relative; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 14px; border-radius:14px; transition: all 0.2s cubic-bezier(0.16,1,0.3,1); color: var(--theme-text-dim); }
+      .nav-pill.active { background: var(--theme-primary); color: black !important; box-shadow: 0 6px 20px rgba(0,0,0,0.25); transform: translateY(-1px); }
+      .nav-pill.active .nav-icon { transform: scale(1.1); }
+      .nav-pill .nav-badge { position:absolute; top:4px; right:8px; width:7px; height:7px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px #22c55e; display:none; }
+      .nav-pill.has-alert .nav-badge { display:block; }
+      @media (min-width: 1024px) {
+        .top-nav-pro { display:none !important; }
+        .desktop-sidebar { display:flex !important; }
+        .app-shell { margin-left: 88px !important; }
+      }
+      @media (max-width: 1023px) {
+        .desktop-sidebar { display:none !important; }
+      }
+      .desktop-sidebar { position:fixed; left:0; top:0; bottom:0; width:88px; background: var(--theme-card); border-right:1px solid var(--theme-border); z-index:50; flex-direction:column; align-items:center; padding:20px 0; gap:8px; }
+      .desktop-sidebar .side-btn { width:56px; height:56px; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--theme-text-dim); transition:all 0.2s; cursor:pointer; border:1px solid transparent; }
+      .desktop-sidebar .side-btn:hover { background: var(--theme-card-inner); color: var(--theme-text); border-color: var(--theme-border); }
+      .desktop-sidebar .side-btn.active { background: var(--theme-primary); color:black; box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+      .desktop-sidebar .side-btn span:last-child { font-size:8px; font-weight:900; letter-spacing:0.05em; }
+    
+/* ===== TRUCK OS FINAL A - Premium Enhancements ===== */
+[data-theme="orange"] .app-shell {
+  background: radial-gradient(1000px 500px at 50% -10%, rgba(255,106,0,0.14), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(255,255,255,0.04), transparent 50%), #0A0A0B !important;
+}
+[data-theme="orange"] .bg-\[\#0E1526\] {
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+[data-theme="orange"] .btn-primary, [data-theme="orange"] button.bg-\[\#00E676\] {
+  background: #FF6A00 !important;
+  color: black !important;
+  border-radius: 9999px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em;
+  box-shadow: 0 8px 24px rgba(255,106,0,0.35) !important;
+}
+[data-theme="orange"] .timeline-item::before { background: linear-gradient(to bottom, #FF6A00, rgba(255,106,0,0.2)) !important; }
+[data-theme="orange"] .timeline-node.is-stop { background:#FF6A00 !important; color:black !important; border-color:#FF8A33 !important; box-shadow:0 0 16px rgba(255,106,0,0.5) !important; }
+[data-theme="orange"] #home-route-progress, [data-theme="orange"] .text-\[\#FF007F\] { color:#FF6A00 !important; }
+[data-theme="orange"] .text-\[\#00E676\] { color:#FF6A00 !important; }
+[data-theme="orange"] .glow-green { box-shadow: 0 0 20px rgba(255,106,0,0.3) !important; }
+[data-theme="orange"] .glow-pink { box-shadow: 0 0 20px rgba(255,106,0,0.35) !important; }
+/* Map header simulation */
+.truck-map-header { height: 140px; border-radius: 20px; overflow: hidden; position: relative; background: #111; border:1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
+.truck-map-grid { position:absolute; inset:0; background: linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px); background-size:32px 32px; mask-image: radial-gradient(ellipse at center, black 50%, transparent 85%); }
+.truck-map-line { position:absolute; top:50%; left:10%; right:15%; height:3px; background: linear-gradient(90deg, #FF6A00, #FF6A00 60%, transparent); border-radius:2px; }
+.truck-map-dot { position:absolute; width:10px; height:10px; border-radius:50%; background:#FF6A00; box-shadow:0 0 12px #FF6A00; top:50%; transform: translate(-50%, -50%); }
+
+</style>
+
+    <!-- Desktop Sidebar -->
+    <div class="desktop-sidebar hidden">
+      <div style="width:48px; height:48px; border-radius:14px; background:var(--theme-primary); display:flex; align-items:center; justify-content:center; font-weight:900; color:black; font-size:18px; margin-bottom:12px; box-shadow:0 0 20px rgba(255,106,0,0.4)">M</div>
+      <button onclick="switchTab('inicio')" id="d-nav-inicio" class="side-btn active"><span style="font-size:20px">🏠</span><span>INICIO</span></button>
+      <button onclick="switchTab('rutas')" id="d-nav-rutas" class="side-btn"><span style="font-size:20px">🗺️</span><span>RUTAS</span></button>
+      <button onclick="switchTab('nueva')" id="d-nav-nueva" class="side-btn"><span style="font-size:20px">📷</span><span>AÑADIR</span></button>
+      <button onclick="switchTab('buscar')" id="d-nav-buscar" class="side-btn"><span style="font-size:20px">🔍</span><span>BUSCAR</span></button>
+      <button onclick="switchTab('peritaje')" id="d-nav-peritaje" class="side-btn"><span style="font-size:20px">🛡️</span><span>PERITAJE</span></button>
+      <div style="flex:1"></div>
+      <button onclick="switchTab('ajustes')" id="d-nav-ajustes" class="side-btn"><span style="font-size:20px">⚙️</span><span>AJUSTES</span></button>
+      <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#333,#111); border:1px solid var(--theme-border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; margin-top:8px;">AC</div>
+    </div>
+
+    <nav class="top-nav-pro px-2 py-2 flex justify-between items-center gap-1 overflow-x-auto no-scrollbar">
+      <button onclick="switchTab('inicio')" id="nav-inicio" class="nav-pill active"><span class="nav-icon text-[18px]">🏠</span><span class="text-[9px] font-black tracking-wider">INICIO</span><span class="nav-badge"></span></button>
+      <button onclick="switchTab('rutas')" id="nav-rutas" class="nav-pill"><span class="nav-icon text-[18px]">🗺️</span><span class="text-[9px] font-black tracking-wider">RUTAS</span></button>
+      <button onclick="switchTab('nueva')" id="nav-nueva" class="nav-pill has-alert"><span class="nav-icon text-[18px]">📷</span><span class="text-[9px] font-black tracking-wider">AÑADIR</span><span class="nav-badge" style="background:var(--theme-primary)"></span></button>
+      <button onclick="switchTab('buscar')" id="nav-buscar" class="nav-pill"><span class="nav-icon text-[18px]">🔍</span><span class="text-[9px] font-black tracking-wider">BUSCAR</span></button>
+      <button onclick="switchTab('peritaje')" id="nav-peritaje" class="nav-pill"><span class="nav-icon text-[18px]">🛡️</span><span class="text-[9px] font-black tracking-wider">PERITAJE</span></button>
+      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-pill"><span class="nav-icon text-[18px]">⚙️</span><span class="text-[9px] font-black tracking-wider">AJUSTES</span></button>
     </nav>
+
 
     <!-- NOTIFICACIONES TOAST -->
     <div id="toast" class="fixed top-28 left-1/2 -translate-x-1/2 bg-[#FF007F] text-white px-4 py-2.5 rounded-full font-black text-xs shadow-2xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none max-w-[90%] text-center glow-pink">
@@ -389,7 +577,7 @@
           </div>
         </div>
 
-        <div id="stops-list" class="timeline-container space-y-2"></div>
+        <div id="stops-list" class="timeline-container space-y-0"></div>
       </section>
 
       <!-- 3. AÑADIR HOJA / ALBARÁN -->
@@ -576,6 +764,49 @@
 
       <!-- 6. AJUSTES Y BACKUP -->
       <section id="tab-ajustes" class="tab-content space-y-4 hidden">
+
+        <div class="bg-[#0E1526] border border-[#1C263E] rounded-2xl p-4 space-y-3">
+          <h3 class="text-xs font-black uppercase tracking-wider" style="color:var(--theme-primary)">🎨 Aspecto / Temas</h3>
+          <p class="text-[11px] text-slate-400">Elige el estilo que más te guste. Se guarda automáticamente.</p>
+          <div class="grid grid-cols-1 gap-2.5">
+            <div class="theme-card bg-[#0A0A0B] border border-white/10" data-theme-card="orange" onclick="setTheme('orange')">
+              <div class="check">✓</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#FF6A00] flex items-center justify-center text-black font-black">O</div>
+                <div><div class="text-sm font-black text-white">NARANJA KTM - MotosPro OS</div><div class="text-[11px] text-white/60">Industrial premium, naranja mecánico</div></div>
+              </div>
+            </div>
+            <div class="theme-card bg-[#070A12] border border-[#00E676]/20" data-theme-card="neon" onclick="setTheme('neon')">
+              <div class="check">✓</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#00E676] flex items-center justify-center text-black font-black">N</div>
+                <div><div class="text-sm font-black text-white">CYBER NEON</div><div class="text-[11px] text-white/60">Verde + Rosa neón, estilo gamer</div></div>
+              </div>
+            </div>
+            <div class="theme-card bg-white border border-slate-200" data-theme-card="light" onclick="setTheme('light')">
+              <div class="check">✓</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black">L</div>
+                <div><div class="text-sm font-black text-slate-900">ICE LIGHT</div><div class="text-[11px] text-slate-500">Blanco premium, ideal a pleno sol</div></div>
+              </div>
+            </div>
+            <div class="theme-card bg-[#080D1A] border border-[#1E40FF]/30" data-theme-card="blue" onclick="setTheme('blue')">
+              <div class="check">✓</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#1E40FF] flex items-center justify-center text-white font-black">B</div>
+                <div><div class="text-sm font-black text-white">YAMAHA RACING BLUE</div><div class="text-[11px] text-white/60">Azul MotoGP, deportivo</div></div>
+              </div>
+            </div>
+            <div class="theme-card bg-[#111410] border border-[#8B9A6B]/30" data-theme-card="military" onclick="setTheme('military')">
+              <div class="check">✓</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#8B9A6B] flex items-center justify-center text-black font-black">M</div>
+                <div><div class="text-sm font-black text-white">CARBON MILITARY</div><div class="text-[11px] text-white/60">Oliva táctico, robusto</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-[#0E1526] border border-[#1C263E] rounded-2xl p-4">
           <h3 class="text-xs font-bold text-[#00E676] uppercase tracking-wider mb-3">Clave API Gemini (Google AI Studio)</h3>
           <p class="text-[11px] text-slate-300 mb-2">Pega aquí tu clave de Google AI Studio (puede empezar por AIzaSy... o AQ.Ab...):</p>
@@ -1395,11 +1626,9 @@
           const esBase = p.esOrigen || p.esFin;
           const tiempoTramo = p.kmTramo > 0 ? calcularTiempoEstimado(p.kmTramo) : null;
 
-          let nodeBg = 'bg-[#1C263E] text-slate-300 border-slate-600';
-          if (esBase) nodeBg = 'bg-sky-500 text-slate-950 border-sky-300';
-          else if (esCompletada) nodeBg = 'bg-[#00E676] text-slate-950 border-[#00E676] glow-green';
-          else if (tieneIncidencia) nodeBg = 'bg-[#FF007F] text-white border-red-400 glow-pink';
-          else nodeBg = 'bg-[#FF007F] text-white border-pink-300';
+          let nodeClass = 'is-stop';
+          if (esBase) nodeClass = 'is-base';
+          else if (esCompletada) nodeClass = 'is-done';
 
           let badgeBg = 'bg-slate-800 text-slate-300 border-slate-700';
           if (esRecogida) badgeBg = 'bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40';
@@ -1644,30 +1873,32 @@
 
           const nExp = (p.expedientes || []).length;
           const stopDetailId = 'stop-detail-' + p.id;
+          const locUpper = String(p.localidad || '—').toUpperCase();
+          const tipoLabel = (p.tipoAccion || (esBase ? (p.esFin ? 'RETORNO BASE' : 'SALIDA BASE') : 'TRAMO')).toUpperCase();
           return `
             <div class="timeline-item">
-              <div class="timeline-node w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-black shadow-md ${nodeBg}">
-                ${p.orden}
+              <div class="timeline-node ${nodeClass}">
+                ${p.orden != null ? p.orden : ''}
               </div>
 
-              <div class="rounded-2xl border transition-all overflow-hidden ${esCompletada ? 'bg-[#0E1526]/50 border-[#00E676]/40' : (tieneIncidencia ? 'bg-red-950/20 border-red-800/50' : 'bg-[#0E1526] border-[#1C263E]')}">
+              <div class="timeline-card overflow-hidden ${esCompletada && !esBase ? 'border-[#00E676]/35' : ''} ${tieneIncidencia ? 'border-red-800/50' : ''}">
                 
-                <!-- Fila compacta (estilo línea de tiempo neón) -->
-                <button type="button" onclick="toggleStopDetail('${stopDetailId}')" class="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 active:opacity-90">
+                <!-- Fila compacta estilo captura -->
+                <button type="button" onclick="toggleStopDetail('${stopDetailId}')" class="w-full text-left px-3.5 py-3 flex items-center justify-between gap-2">
                   <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <h4 class="font-black text-[13px] text-white tracking-wide truncate">${p.localidad}</h4>
-                      ${nExp > 0 ? `<span class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/40 shrink-0">${nExp}</span>` : ''}
+                    <div class="flex items-center gap-2 min-w-0">
+                      <h4 class="font-black text-[13px] text-white tracking-wide truncate uppercase">${locUpper}</h4>
+                      ${nExp > 0 ? `<span class="text-[10px] font-black min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[#FF007F] text-white flex items-center justify-center shrink-0">${nExp}</span>` : ''}
                     </div>
-                    <div class="flex items-center flex-wrap gap-1.5 mt-0.5">
+                    <div class="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 mt-1">
                       ${p.kmTramo > 0 ? `
-                        <span class="text-[10px] font-semibold text-[#00E676] font-mono">🛣️ ${p.kmTramo} km</span>
-                        <span class="text-[10px] font-semibold text-[#38BDF8] font-mono">⏱️ ${tiempoTramo}</span>
+                        <span class="text-[11px] font-semibold text-[#00E676] font-mono">🛣️ ${p.kmTramo} km</span>
+                        <span class="text-[11px] font-semibold text-slate-300 font-mono">⏱️ ${tiempoTramo}</span>
                       ` : ''}
-                      <span class="text-[9px] font-bold uppercase text-slate-500">${p.tipoAccion || 'TRAMO'}</span>
+                      <span class="text-[10px] font-bold tracking-wide text-slate-500">${tipoLabel}</span>
                     </div>
                   </div>
-                  <span id="${stopDetailId}-chevron" class="text-slate-500 text-sm shrink-0 transition-transform">▼</span>
+                  <span id="${stopDetailId}-chevron" class="text-slate-500 text-xs shrink-0 transition-transform">▼</span>
                 </button>
 
                 <!-- Detalle de la parada (oculto por defecto) -->
@@ -2808,7 +3039,15 @@
 
     async function processRouteImage(base64Image, mimeType) {
       const prompt = `Actúa como extractor OCR de alta precisión para las hojas de transporte de "Motos@Motos Trans S.L.".
-Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario (secuencia de paradas con localidad, kmTramo, tipoAccion). 3. Expedientes (expediente, tipo, moto, clienteOrigen, telOrigen, locOrigen, clienteDestino, telDestino, locDestino, importe) mapeados a cada parada.
+
+REGLAS CRÍTICAS DEL ITINERARIO (léelas con atención):
+1) SALIDA BASE: primera parada. Suele ser Torrejón de Velasco (u otra base de la empresa). tipoAccion = "SALIDA BASE", esOrigen = true, esFin = false. SIN expedientes de clientes.
+2) Paradas intermedias y la ÚLTIMA ciudad de trabajo (ej. Jaén, Málaga, Córdoba…): son ENTREGA (E) o RECOGIDA (R). Tienen expedientes/albaranes. NUNCA son "RETORNO BASE" aunque sea la última ciudad de la lista de entregas.
+3) RETORNO BASE: parada FINAL separada, DESPUÉS de la última entrega/recogida. Misma localidad que la SALIDA BASE (ej. Torrejón de Velasco). tipoAccion = "RETORNO BASE", esOrigen = false, esFin = true. SIN expedientes de clientes. Si en la hoja pone "retorno", "regreso a base", "vuelta base" o similar al final, créala aunque no tenga km explícitos.
+4) Si la hoja lista ciudades de entrega y al final indica volver a base: la última ciudad con albaranes = ENTREGA/RECOGIDA; la base = RETORNO BASE aparte.
+5) No marques Jaén (ni ninguna ciudad de cliente) como RETORNO BASE ni esFin = true.
+
+Extrae: 1. Cabecera (conductor, dni, matricula, totalKm, nombreRuta, fecha, avisoEspecial, gastosGasoil). 2. Itinerario completo en orden. 3. Expedientes mapeados solo a paradas de ENTREGA/RECOGIDA.
 Devuelve EXCLUSIVAMENTE este JSON:
 {
   "nombreRuta": "string", "conductor": "string", "dni": "string", "matricula": "string", "totalKm": 0, "gastosGasoil": "string", "fecha": "string", "avisoEspecial": "string",
@@ -2894,6 +3133,75 @@ Devuelve EXCLUSIVAMENTE este JSON:
             }))
           }))
         };
+
+        // Corregir SALIDA/RETORNO BASE: la última ciudad con albaranes NO es el retorno a base
+        (function normalizeBaseStops(ruta) {
+          const stops = ruta.paradas || [];
+          if (!stops.length) return;
+
+          const isBaseName = (t) => {
+            const s = String(t || '').toUpperCase();
+            return s.includes('SALIDA BASE') || s.includes('RETORNO BASE') || s.includes('REGRESO BASE') || s === 'BASE';
+          };
+          const hasExps = (p) => (p.expedientes || []).length > 0;
+
+          // Localidad de base = primera SALIDA BASE, o primera parada sin expedientes al inicio
+          let baseLoc = null;
+          const salida = stops.find(p => String(p.tipoAccion || '').toUpperCase().includes('SALIDA') || p.esOrigen);
+          if (salida) baseLoc = salida.localidad;
+          if (!baseLoc && stops[0] && !hasExps(stops[0])) baseLoc = stops[0].localidad;
+          if (!baseLoc) baseLoc = 'Torrejón de Velasco';
+
+          // Primera parada: forzar SALIDA BASE si parece base o no tiene expedientes
+          if (stops[0]) {
+            if (!hasExps(stops[0]) || isBaseName(stops[0].tipoAccion) || stops[0].esOrigen) {
+              stops[0].tipoAccion = 'SALIDA BASE';
+              stops[0].esOrigen = true;
+              stops[0].esFin = false;
+              stops[0].expedientes = [];
+              if (stops[0].localidad) baseLoc = stops[0].localidad;
+            }
+          }
+
+          // Si la última parada tiene expedientes y está marcada como fin/retorno → es ciudad de trabajo, no base
+          const last = stops[stops.length - 1];
+          if (last && hasExps(last)) {
+            last.esFin = false;
+            last.esOrigen = false;
+            const ta = String(last.tipoAccion || '').toUpperCase();
+            if (ta.includes('RETORNO') || ta.includes('SALIDA') || ta.includes('BASE') || !ta.includes('(E)') && !ta.includes('(R)')) {
+              const hayRecogida = (last.expedientes || []).some(e => String(e.tipo || '').toUpperCase().includes('RECOG'));
+              last.tipoAccion = hayRecogida ? 'RECOGIDA (R)' : 'ENTREGA (E)';
+            }
+            // Añadir RETORNO BASE real debajo
+            stops.push({
+              id: 'p_' + Date.now() + '_retorno',
+              orden: stops.length,
+              localidad: baseLoc,
+              tipoAccion: 'RETORNO BASE',
+              kmTramo: 0,
+              esOrigen: false,
+              esFin: true,
+              estado: 'pendiente',
+              expedientes: []
+            });
+          } else if (last && !hasExps(last)) {
+            // Última sin expedientes → forzar RETORNO BASE con localidad de base
+            last.tipoAccion = 'RETORNO BASE';
+            last.esFin = true;
+            last.esOrigen = false;
+            last.expedientes = [];
+            if (!last.localidad || String(last.localidad).toUpperCase().includes('JAEN') || String(last.localidad).toUpperCase().includes('JAÉN')) {
+              // Si el OCR puso mal la ciudad de cliente como retorno, corregir a base
+              if (baseLoc && last.localidad !== baseLoc) last.localidad = baseLoc;
+            }
+            if (!last.localidad) last.localidad = baseLoc;
+          }
+
+          // Re-numerar orden
+          stops.forEach((p, i) => { p.orden = i; });
+          ruta.paradas = stops;
+        })(nuevaRuta);
 
         routes.unshift(nuevaRuta);
         activeRouteId = newId;
@@ -4317,5 +4625,28 @@ Si no hay daños: score 100 y damages [].`;
       });
     }
   </script>
+
+    <script>
+      const THEMES = ['orange','neon','light','blue','military'];
+      function setTheme(name){
+        if(!THEMES.includes(name)) return;
+        document.documentElement.setAttribute('data-theme', name);
+        document.body.setAttribute('data-theme', name);
+        localStorage.setItem('motospro_theme', name);
+        // update active cards
+        document.querySelectorAll('[data-theme-card]').forEach(c=>{
+          c.classList.toggle('active', c.getAttribute('data-theme-card')===name);
+        });
+        // update meta theme-color
+        const meta = document.querySelector('meta[name="theme-color"]');
+        const colors = {orange:'#0A0A0B', neon:'#070A12', light:'#F8FAFC', blue:'#080D1A', military:'#111410'};
+        if(meta) meta.setAttribute('content', colors[name]||'#0A0A0B');
+      }
+      (function(){
+        const saved = localStorage.getItem('motospro_theme') || 'orange';
+        setTheme(saved);
+      })();
+    </script>
+
 </body>
 </html>
