@@ -1,0 +1,24 @@
+{
+  "name": "Motos@Motos - Gestor de Rutas",
+  "short_name": "MotosMotos",
+  "description": "Gestor de rutas de transporte de motos, arqueo, peritaje y temas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070A12",
+  "theme_color": "#FF6A00",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
